@@ -58,12 +58,15 @@ class WSClient(threading.Thread):
                 break
 
         LOG.info("---<[ websocket ]")
+        self.client.callback('WebSocketDisconnect', None)
 
     def on_error(self, ws, error):
         LOG.error(error)
+        self.client.callback('WebSocketError', error)
 
     def on_open(self, ws):
         LOG.info("--->[ websocket ]")
+        self.client.callback('WebSocketConnect', None)
 
     def on_message(self, ws, message):
 
