@@ -14,7 +14,9 @@ establish a session, please see [clients.py](https://github.com/iwalton3/jellyfi
  - Removal of `websocket.py` (now a dependency to `websocket_client`).
  - Removal of dependencies on `helper` (from Jellyfin Kodi) and `kodi_six`.
  - Add `has_attribute` directly to `__init__.py`.
- - Add API call `get_season` for fetching season metadata.
+ - Add API calls:
+   - `get_season` for fetching season metadata.
+   - `get_audio_stream` to read an audio stream into a file
  - Add parameters `aid=None, sid=None, start_time_ticks=None, is_playback=True` to API call `get_play_info`.
  - Remove dependency to `six` from `http.py`.
 

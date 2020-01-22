@@ -61,9 +61,15 @@ class HTTP(object):
             else:
                 LOG.debug("UserId is not set.")
 
+        if '{DeviceId}'in string:
+            if self.config.data.get('app.device_id', None):
+                string = string.replace("{DeviceId}", self.config.data['app.device_id'])
+            else:
+                LOG.debug("DeviceId is not set.")
+
         return string
 
-    def request(self, data, session=None):
+    def request(self, data, session=None, dest_file=None):
 
         ''' Give a chance to retry the connection. Jellyfin sometimes can be slow to answer back
             data dictionary can contain:
@@ -81,12 +87,18 @@ class HTTP(object):
         data = self._request(data)
         LOG.debug("--->[ http ] %s", json.dumps(data, indent=4))
         retry = data.pop('retry', 5)
+        stream = dest_file is not None
 
         while True:
 
             try:
-                r = self._requests(session or self.session or requests, data.pop('type', "GET"), **data)
-                r.content  # release the connection
+                r = self._requests(session or self.session or requests, data.pop('type', "GET"), **data, stream=stream)
+                if stream:
+                    for chunk in r.iter_content(chunk_size=8192): 
+                        if chunk: # filter out keep-alive new chunks
+                            dest_file.write(chunk)
+                else:
+                    r.content  # release the connection
 
                 if not self.keep_alive and self.session is not None:
                     self.stop_session()
@@ -157,6 +169,8 @@ class HTTP(object):
 
             else:
                 try:
+                    if stream:
+                        return
                     self.config.data['server-time'] = r.headers['Date']
                     elapsed = int(r.elapsed.total_seconds() * 1000)
                     response = r.json()
