@@ -41,6 +41,11 @@ class API(object):
 
         return self.client.request(request)
 
+    def _http_stream(self, action, url, dest_file, request={}):
+        request.update({'type': action, 'handler': url})
+
+        self.client.request(request, dest_file=dest_file)
+
     def _get(self, handler, params=None):
         return self._http("GET", handler, {'params': params})
 
@@ -49,6 +54,9 @@ class API(object):
 
     def _delete(self, handler, params=None):
         return self._http("DELETE", handler, {'params': params})
+
+    def _get_stream(self, handler, dest_file, params=None):
+        self._http_stream("GET", handler, dest_file, {'params': params})
 
     #################################################################################################
 
@@ -357,4 +365,13 @@ class API(object):
     def close_transcode(self, device_id):
         return self._delete("Videos/ActiveEncodings", params={
             'DeviceId': device_id
+        })
+
+    def get_audio_stream(self, dest_file, item_id, play_id, container, max_streaming_bitrate=140000000, audio_codec=None):
+        self._get_stream("Audio/%s/universal" % item_id, dest_file, params={
+            'UserId': "{UserId}",
+            'DeviceId': "{DeviceId}",
+            'PlaySessionId': play_id,
+            'Container': container,
+            'AudioCodec': audio_codec
         })
