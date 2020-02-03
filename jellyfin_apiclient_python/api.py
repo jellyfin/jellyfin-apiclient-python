@@ -207,6 +207,14 @@ class API(object):
             'IncludeItemTypes': media
         })
 
+    def search_media_items(self, term=None, media=None, limit=20):
+        return self.user_items(params={
+            'searchTerm': term,
+            'Recursive': True,
+            'IncludeItemTypes': media,
+            'Limit': limit
+        })
+
     def get_channels(self):
         return self._get("LiveTv/Channels", {
             'UserId': "{UserId}",
