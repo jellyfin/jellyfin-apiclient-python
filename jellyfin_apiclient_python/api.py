@@ -121,6 +121,12 @@ class API(object):
     def get_user(self, user_id=None):
         return self.users() if user_id is None else self._get("Users/%s" % user_id)
 
+    def get_user_settings(self, client="emby"):
+        return self._get("DisplayPreferences/usersettings", params={
+            "userId": "{UserId}",
+            "client": client
+        })
+
     def get_views(self):
         return self.users("/Views")
 
