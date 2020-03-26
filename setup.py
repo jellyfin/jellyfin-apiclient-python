@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='jellyfin-apiclient-python',
-    version='1.4.0',
+    version='1.5.0',
     author="Ian Walton",
     author_email="iwalton3@gmail.com",
     description="Python API client for Jellyfin",
@@ -20,5 +20,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=['requests', 'urllib3', 'websocket_client']
+    install_requires=['requests', 'urllib3', 'websocket_client', 'six']
 )

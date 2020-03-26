@@ -19,7 +19,6 @@ establish a session, please see [clients.py](https://github.com/iwalton3/jellyfi
    - `get_audio_stream` to read an audio stream into a file
    - `search_media_items` to search for media items
  - Add parameters `aid=None, sid=None, start_time_ticks=None, is_playback=True` to API call `get_play_info`.
- - Remove dependency to `six` from `http.py`.
 
 ## Contributing
 
