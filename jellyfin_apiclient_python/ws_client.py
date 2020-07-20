@@ -72,6 +72,10 @@ class WSClient(threading.Thread):
 
         message = json.loads(message)
         data = message.get('Data', {})
+        if data is None:
+            data = {}
+        elif type(data) is not dict:
+            data = {"value": data}
 
         if message['MessageType'] in ('RefreshProgress',):
             LOG.debug("Ignoring %s", message)
