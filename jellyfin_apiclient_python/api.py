@@ -520,7 +520,7 @@ class API(object):
         params = {}
         if item_id is not None:
             params["FilterItemId"] = item_id
-        return self._post("SyncPlay/List", params)
+        return self._get("SyncPlay/List", params)
 
     def join_sync_play(self, group_id):
         return self._post("SyncPlay/Join", {
