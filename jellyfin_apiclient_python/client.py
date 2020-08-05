@@ -10,6 +10,7 @@ from .configuration import Config
 from .http import HTTP
 from .ws_client import WSClient
 from .connection_manager import ConnectionManager, CONNECTION_STATE
+from .timesync_manager import TimeSyncManager
 
 #################################################################################################
 
@@ -41,6 +42,7 @@ class JellyfinClient(object):
         self.jellyfin = api.API(self.http)
         self.callback_ws = callback
         self.callback = callback
+        self.timesync = TimeSyncManager(self)
 
     def set_credentials(self, credentials=None):
         self.auth.credentials.set_credentials(credentials or {})
@@ -80,6 +82,6 @@ class JellyfinClient(object):
         self.wsc.start()
 
     def stop(self):
-
         self.wsc.stop_client()
         self.http.stop_session()
+        self.timesync.stop_ping()
