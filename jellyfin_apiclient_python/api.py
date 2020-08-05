@@ -516,3 +516,42 @@ class API(object):
             "response_received": response_received
         }
     
+    def get_sync_play(self, item_id=None):
+        params = {}
+        if item_id is not None:
+            params["FilterItemId"] = item_id
+        return self._post("SyncPlay/List", params)
+
+    def join_sync_play(self, group_id):
+        return self._post("SyncPlay/Join", {
+            "GroupId": group_id
+        })
+
+    def leave_sync_play(self):
+        return self._post("SyncPlay/Leave")
+    
+    def play_sync_play(self):
+        return self._post("SyncPlay/Play")
+
+    def pause_sync_play(self):
+        return self._post("SyncPlay/Pause")
+
+    def seek_sync_play(self, position_ticks):
+        return self._post("SyncPlay/Seek", {
+            "PositionTicks": position_ticks
+        })
+    
+    def buffering_sync_play(self, when, position_ticks, done=False):
+        return self._post("SyncPlay/Buffering", {
+            "When": when.isoformat() + "Z",
+            "PositionTicks": position_ticks,
+            "BufferingDone": done
+        })
+
+    def ping_sync_play(self, ping):
+        return self._post("SyncPlay/Ping", {
+            "Ping": ping
+        })
+
+    def new_sync_play(self):
+        return self._post("SyncPlay/New")
