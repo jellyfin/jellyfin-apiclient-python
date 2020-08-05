@@ -17,7 +17,7 @@ class KeepAlive(threading.Thread):
         force_next = False
         while not self.halt:
             if self.trigger.wait(self.timeout/2):
-                if halt:
+                if self.halt:
                     break
             else:
                 self.ws.send("KeepAlive")
