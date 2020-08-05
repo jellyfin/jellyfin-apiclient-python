@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, absolute_import, print_function, unicode_literals
+from datetime import datetime
+import re
 import requests
 import json
 import logging
@@ -485,3 +487,32 @@ class API(object):
         url = response.url.replace('/system/info/public', '')
         return url
 
+    #################################################################################################
+
+    # Syncplay
+
+    #################################################################################################
+
+    def _parse_precise_time(self, time):
+        # We have to remove the Z and the least significant digit.
+        return datetime.strptime(time[:-2], "%Y-%m-%dT%H:%M:%S.%f")
+
+    def utc_time(self):
+        # Measure time as close to the call as is possible.
+        server_address = self.config.data.get("auth.server")
+        
+        response = self.send_request(server_address, "GetUTCTime")
+        response_received = datetime.utcnow()
+        request_sent = response_received - response.elapsed
+
+        response_obj = response.json()
+        request_received = self._parse_precise_time(response_obj["RequestReceptionTime"])
+        response_sent = self._parse_precise_time(response_obj["ResponseTransmissionTime"])
+
+        return {
+            "request_sent": request_sent,
+            "request_received": request_received,
+            "response_sent": response_sent,
+            "response_received": response_received
+        }
+    
