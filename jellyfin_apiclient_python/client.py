@@ -31,12 +31,12 @@ class JellyfinClient(object):
 
     logged_in = False
 
-    def __init__(self):
+    def __init__(self, allow_multiple_clients=False):
         LOG.debug("JellyfinClient initializing...")
 
         self.config = Config()
         self.http = HTTP(self)
-        self.wsc = WSClient(self)
+        self.wsc = WSClient(self, allow_multiple_clients)
         self.auth = ConnectionManager(self)
         self.jellyfin = api.API(self.http)
         self.callback_ws = callback
