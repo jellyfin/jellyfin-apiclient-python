@@ -416,8 +416,8 @@ class API(object):
             "x-emby-authorization": auth
         }
 
-    def send_request(self, url, path, method="get", timeout=None, headers=None, data=None):
-        request_method = getattr(requests, method.lower())
+    def send_request(self, url, path, method="get", timeout=None, headers=None, data=None, session=None):
+        request_method = getattr(session or requests, method.lower())
         url = "%s/%s" % (url, path)
         request_settings = {
             "timeout": timeout or self.default_timeout,
@@ -500,8 +500,9 @@ class API(object):
     def utc_time(self):
         # Measure time as close to the call as is possible.
         server_address = self.config.data.get("auth.server")
+        session = self.client.session
         
-        response = self.send_request(server_address, "GetUTCTime")
+        response = self.send_request(server_address, "GetUTCTime", session=session)
         response_received = datetime.utcnow()
         request_sent = response_received - response.elapsed
 
