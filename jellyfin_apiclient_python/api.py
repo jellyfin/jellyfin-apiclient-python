@@ -448,7 +448,8 @@ class API(object):
 
         try:
             LOG.info("Trying to login to %s/%s as %s" % (server_url, path, username))
-            response = self.send_request(server_url, path, method="post", headers=headers, data=json.dumps(authData))
+            response = self.send_request(server_url, path, method="post", headers=headers,
+                                         data=json.dumps(authData), timeout=(5, 30))
 
             if response.status_code == 200:
                 return response.json()
