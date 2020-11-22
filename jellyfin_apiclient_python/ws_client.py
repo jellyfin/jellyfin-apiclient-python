@@ -6,6 +6,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import json
 import logging
 import threading
+import ssl
 
 import websocket
 
