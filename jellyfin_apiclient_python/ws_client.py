@@ -52,6 +52,7 @@ class WSClient(threading.Thread):
         server = self.client.config.data['auth.server']
         server = server.replace('https', "wss") if server.startswith('https') else server.replace('http', "ws")
         wsc_url = "%s/socket?api_key=%s&device_id=%s" % (server, token, device_id)
+        verify = self.client.config.data.get('auth.ssl', False)
 
         LOG.info("Websocket url: %s", wsc_url)
 
@@ -66,8 +67,13 @@ class WSClient(threading.Thread):
             self.global_wsc = self.wsc
 
         while not self.stop and not self.global_stop:
-
-            self.wsc.run_forever(ping_interval=10)
+            if not verify:
+                # https://stackoverflow.com/questions/48740053/
+                self.wsc.run_forever(
+                    ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
+                )
+            else:
+                self.wsc.run_forever(ping_interval=10)
 
             if not self.stop:
                 break
