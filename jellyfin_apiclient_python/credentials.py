@@ -20,6 +20,7 @@ class Credentials(object):
 
     def __init__(self):
         LOG.debug("Credentials initializing...")
+        self.credentials = {}
 
     def set_credentials(self, credentials):
         self.credentials = credentials
