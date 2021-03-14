@@ -64,13 +64,16 @@ class ConnectionManager(object):
 
         self.config.data['auth.token'] = None
 
-    def get_available_servers(self):
+    def get_available_servers(self, discover=True):
 
         LOG.info("Begin getAvailableServers")
 
         # Clone the credentials
         credentials = self.credentials.get()
-        found_servers = self.process_found_servers(self._server_discovery())
+        found_servers = []
+
+        if discover:
+            found_servers = self.process_found_servers(self._server_discovery())
 
         if not found_servers and not credentials['Servers']:  # back out right away, no point in continuing
             LOG.info("Found no servers")
@@ -191,11 +194,11 @@ class ConnectionManager(object):
             LOG.error("Failing server connection. ERROR msg: {}".format(e))
             return { 'State': CONNECTION_STATE['Unavailable'] }
 
-    def connect(self, options={}):
+    def connect(self, options={}, discover=True):
 
         LOG.info("Begin connect")
 
-        servers = self.get_available_servers()
+        servers = self.get_available_servers(discover)
         LOG.info("connect has %s servers", len(servers))
 
         if not (len(servers)): # No servers provided

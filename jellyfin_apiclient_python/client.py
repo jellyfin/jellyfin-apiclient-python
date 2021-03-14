@@ -50,10 +50,10 @@ class JellyfinClient(object):
     def get_credentials(self):
         return self.auth.credentials.get_credentials()
 
-    def authenticate(self, credentials=None, options=None):
+    def authenticate(self, credentials=None, options=None, discover=True):
 
         self.set_credentials(credentials or {})
-        state = self.auth.connect(options or {})
+        state = self.auth.connect(options or {}, discover)
 
         if state['State'] == CONNECTION_STATE['SignedIn']:
 
