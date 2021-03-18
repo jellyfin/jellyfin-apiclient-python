@@ -533,21 +533,68 @@ class API(object):
         return self._post("SyncPlay/Leave")
     
     def play_sync_play(self):
+        """deprecated (<= 10.7.0)"""
         return self._post("SyncPlay/Play")
 
     def pause_sync_play(self):
         return self._post("SyncPlay/Pause")
+
+    def unpause_sync_play(self):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/Unpause")
 
     def seek_sync_play(self, position_ticks):
         return self._post("SyncPlay/Seek", {
             "PositionTicks": position_ticks
         })
     
-    def buffering_sync_play(self, when, position_ticks, done=False):
+    def buffering_sync_play(self, when, position_ticks, is_playing, item_id):
         return self._post("SyncPlay/Buffering", {
             "When": when.isoformat() + "Z",
             "PositionTicks": position_ticks,
-            "BufferingDone": done
+            "IsPlaying": is_playing,
+            "PlaylistItemId": item_id
+        })
+
+    def ready_sync_play(self, when, position_ticks, is_playing, item_id):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/Ready", {
+            "When": when.isoformat() + "Z",
+            "PositionTicks": position_ticks,
+            "IsPlaying": is_playing,
+            "PlaylistItemId": item_id
+        })
+
+    def reset_queue_sync_play(self, queue_item_ids, position=0, position_ticks=0):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/SetNewQueue", {
+            "PlayingQueue": queue_item_ids,
+            "PlayingItemPosition": position,
+            "StartPositionTicks": position_ticks
+        })
+
+    def ignore_sync_play(self, should_ignore):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/SetIgnoreWait", {
+            "IgnoreWait": should_ignore
+        })
+
+    def next_sync_play(self, item_id):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/NextItem", {
+            "PlaylistItemId": item_id
+        })
+
+    def prev_sync_play(self, item_id):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/PreviousItem", {
+            "PlaylistItemId": item_id
+        })
+
+    def set_item_sync_play(self, item_id):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/SetPlaylistItem", {
+            "PlaylistItemId": item_id
         })
 
     def ping_sync_play(self, ping):
@@ -556,4 +603,11 @@ class API(object):
         })
 
     def new_sync_play(self):
+        """deprecated (< 10.7.0)"""
         return self._post("SyncPlay/New")
+
+    def new_sync_play_v2(self, group_name):
+        """10.7.0+ only"""
+        return self._post("SyncPlay/New", {
+            "GroupName": group_name
+        })
