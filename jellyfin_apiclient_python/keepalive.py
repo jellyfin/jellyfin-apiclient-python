@@ -13,7 +13,7 @@ class KeepAlive(threading.Thread):
         self.join()
 
     def run(self):
-        while not self.halt:
+        while not self.halt.is_set():
             if self.halt.wait(self.timeout/2):
                 break
             else:

@@ -40,7 +40,6 @@ class WSClient(threading.Thread):
         threading.Thread.__init__(self)
 
     def send(self, message, data=""):
-
         if self.wsc is None:
             raise ValueError("The websocket client is not started.")
 
@@ -109,6 +108,7 @@ class WSClient(threading.Thread):
                 self.keepalive.stop()
             self.keepalive = KeepAlive(data, self)
             self.keepalive.start()
+            LOG.debug("ForceKeepAlive received from server.")
             return
         elif message['MessageType'] == "KeepAlive":
             LOG.debug("KeepAlive received from server.")
