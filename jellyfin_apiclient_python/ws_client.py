@@ -119,10 +119,6 @@ class WSClient(threading.Thread):
         elif type(data) is not dict:
             data = {"value": data}
 
-        if message['MessageType'] in ('RefreshProgress',):
-            LOG.debug("Ignoring %s", message)
-            return
-
         if not self.client.config.data['app.default']:
             data['ServerId'] = self.client.auth.server_id
 
