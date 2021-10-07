@@ -49,6 +49,11 @@ class API(object):
         request.update({'type': action, 'handler': url})
 
         return self.client.request(request)
+    
+    def _http_url(self, action, url, request={}):
+        request.update({"type": action, "handler": url})
+
+        return self.client.request_url(request)
 
     def _http_stream(self, action, url, dest_file, request={}):
         request.update({'type': action, 'handler': url})
@@ -57,6 +62,9 @@ class API(object):
 
     def _get(self, handler, params=None):
         return self._http("GET", handler, {'params': params})
+
+    def _get_url(self, handler, params=None):
+        return self._http_url("GET", handler, {"params": params})
 
     def _post(self, handler, json=None, params=None):
         return self._http("POST", handler, {'params': params, 'json': json})
@@ -110,10 +118,21 @@ class API(object):
         return self._get("Videos%s" % handler)
 
     def artwork(self, item_id, art, max_width, ext="jpg", index=None):
-        if index is None:
-            return jellyfin_url(self.client, "Items/%s/Images/%s?MaxWidth=%s&format=%s" % (item_id, art, max_width, ext))
+        params = {"MaxWidth": max_width, "format": ext}
+        handler = ("Items/%s/Images/%s" % (item_id, art) if index is None
+            else "Items/%s/Images/%s/%s" % (item_id, art, index)
+        )
 
-        return jellyfin_url(self.client, "Items/%s/Images/%s/%s?MaxWidth=%s&format=%s" % (item_id, art, index, max_width, ext))
+        return self._get_url(handler, params)
+
+    def audio_url(self, item_id, max_streaming_bitrate=140000000):
+        params = {
+            "UserId": "{UserId}",
+            "DeviceId": "{DeviceId}",
+            "MaxStreamingBitrate": max_streaming_bitrate,
+        }
+
+        return self._get_url("Audio/%s/universal" % item_id, params)
 
     #################################################################################################
 

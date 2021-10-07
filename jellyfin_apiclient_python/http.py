@@ -6,6 +6,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import json
 import logging
 import time
+import urllib
 
 import requests
 from six import string_types
@@ -69,6 +70,19 @@ class HTTP(object):
                 LOG.debug("DeviceId is not set.")
 
         return string
+
+    def request_url(self, data):
+        if not data:
+            raise AttributeError("Request cannot be empty")
+
+        data = self._request(data)
+        
+        params = data["params"]
+        if "api_key" not in params:
+            params["api_key"] = self.config.data.get('auth.token')
+
+        encoded_params = urllib.parse.urlencode(data["params"])
+        return "%s?%s" % (data["url"], encoded_params)
 
     def request(self, data, session=None, dest_file=None):
 
