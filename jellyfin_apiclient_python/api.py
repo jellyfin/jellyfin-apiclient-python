@@ -134,6 +134,20 @@ class API(object):
 
         return self._get_url("Audio/%s/universal" % item_id, params)
 
+    def video_url(self, item_id, media_source_id=None):
+        params = {
+            "static": "true",
+            "DeviceId": "{DeviceId}"
+        }
+        if media_source_id is not None:
+            params["MediaSourceId"] = media_source_id
+
+        return self._get_url("Videos/%s/stream" % item_id, params)
+
+    def download_url(self, item_id):
+        params = {}
+        return self._get_url("Items/%s/Download" % item_id, params)
+
     #################################################################################################
 
     # More granular api
