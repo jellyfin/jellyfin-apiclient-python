@@ -7,6 +7,7 @@ import json
 import logging
 import threading
 import ssl
+import certifi
 
 import websocket
 
@@ -73,7 +74,7 @@ class WSClient(threading.Thread):
                     ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
                 )
             else:
-                self.wsc.run_forever(ping_interval=10)
+                self.wsc.run_forever(ping_interval=10, sslopt={"ca_certs": certifi.where()})
 
             if not self.stop:
                 break
