@@ -124,14 +124,18 @@ class API(object):
 
         return self._get_url(handler, params)
 
-    def audio_url(self, item_id, container, audio_codec=None, max_streaming_bitrate=140000000):
+    def audio_url(self, item_id, container=None, audio_codec=None, max_streaming_bitrate=140000000):
         params = {
             "UserId": "{UserId}",
             "DeviceId": "{DeviceId}",
-            'Container': container,
-            'AudioCodec': audio_codec,
             "MaxStreamingBitrate": max_streaming_bitrate,
         }
+
+        if container:
+            params["Container"] = container
+
+        if audio_codec:
+            params["AudioCodec"] = audio_codec
 
         return self._get_url("Audio/%s/universal" % item_id, params)
 
@@ -468,12 +472,7 @@ class API(object):
         LOG.debug(request_settings['timeout'])
         LOG.debug(request_settings['headers'])
 
-        try:
-            return request_method(url, **request_settings)
-        except requests.exceptions.RequestException as error:
-            LOG.error(error)
-
-
+        return request_method(url, **request_settings)
 
     def login(self, server_url, username, password=""):
         path = "Users/AuthenticateByName"
