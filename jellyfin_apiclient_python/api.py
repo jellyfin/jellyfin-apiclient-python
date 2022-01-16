@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, absolute_import, print_function, unicode_literals
 from datetime import datetime
-import re
 import requests
 import json
 import logging
@@ -125,12 +124,18 @@ class API(object):
 
         return self._get_url(handler, params)
 
-    def audio_url(self, item_id, max_streaming_bitrate=140000000):
+    def audio_url(self, item_id, container=None, audio_codec=None, max_streaming_bitrate=140000000):
         params = {
             "UserId": "{UserId}",
             "DeviceId": "{DeviceId}",
             "MaxStreamingBitrate": max_streaming_bitrate,
         }
+
+        if container:
+            params["Container"] = container
+
+        if audio_codec:
+            params["AudioCodec"] = audio_codec
 
         return self._get_url("Audio/%s/universal" % item_id, params)
 
@@ -429,7 +434,8 @@ class API(object):
             'DeviceId': "{DeviceId}",
             'PlaySessionId': play_id,
             'Container': container,
-            'AudioCodec': audio_codec
+            'AudioCodec': audio_codec,
+            "MaxStreamingBitrate": max_streaming_bitrate,
         })
 
     def get_default_headers(self):
@@ -468,7 +474,6 @@ class API(object):
 
         return request_method(url, **request_settings)
 
-
     def login(self, server_url, username, password=""):
         path = "Users/AuthenticateByName"
         authData = {
@@ -498,8 +503,6 @@ class API(object):
         return {}
 
     def validate_authentication_token(self, server):
-
-        url = "%s/%s" % (server['address'], "system/info")
         authTokenHeader = {
                     'X-MediaBrowser-Token': server['AccessToken']
                 }

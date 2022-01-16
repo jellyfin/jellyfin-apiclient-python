@@ -6,14 +6,12 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import json
 import logging
 import socket
-import time
 from datetime import datetime
 from operator import itemgetter
 
 import urllib3
 
 from .credentials import Credentials
-from .http import HTTP  # noqa: I201,I100
 from .api import API
 import traceback
 
@@ -156,25 +154,24 @@ class ConnectionManager(object):
             response_url = self.API.check_redirect(address)
             if address != response_url:
                 address = response_url
-            LOG.info("connectToAddress %s succeeded", address)
+            LOG.info("connect_to_address %s succeeded", address)
             server = {
                 'address': address,
             }
             server = self.connect_to_server(server, options)
             if server is False:
-                LOG.error("connectToAddress %s failed", address)
+                LOG.error("connect_to_address %s failed", address)
                 return { 'State': CONNECTION_STATE['Unavailable'] }
 
             return server
-        except Exception as error:
-            LOG.exception(error)
-            LOG.error("connectToAddress %s failed", address)
+        except Exception:
+            LOG.error("connect_to_address %s failed", address)
             return { 'State': CONNECTION_STATE['Unavailable'] }
 
 
     def connect_to_server(self, server, options={}):
 
-        LOG.info("begin connectToServer")
+        LOG.info("begin connect_to_server")
 
         try:
             result = self.API.get_public_info(server.get('address'))
