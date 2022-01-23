@@ -24,9 +24,12 @@ class Config(object):
 
         LOG.debug("Configuration initializing...")
         self.data = {}
-        self.http()
 
-    def app(self, name, version, device_name, device_id, capabilities=None, device_pixel_ratio=None):
+        self.http()
+        self.app()
+        # self.auth()
+
+    def app(self, name=None, version=None, device_name="Firefox", device_id=None, capabilities=None, device_pixel_ratio=None):
         
         LOG.debug("Begin app constructor.")
         self.data['app.name'] = name
