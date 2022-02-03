@@ -6,8 +6,29 @@ This is the API client from Jellyfin Kodi extracted as a python package so that 
 
 This client can be installed with `pip3 install jellyfin-apiclient-python` and imported with `import jellyfin_apiclient_python`.
 
-There is no documentation for this API at this time. For information on how to create a client and
-establish a session, please see [clients.py](https://github.com/iwalton3/jellyfin-mpv-shim/blob/master/jellyfin_mpv_shim/clients.py) from Jellyfin MPV Shim. For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
+### Example client initialization
+```python
+#!/usr/bin/env python
+from jellyfin_apiclient_python.client import JellyfinClient
+from socket import gethostname
+
+
+client = JellyfinClient()
+app_name = 'Python API Client Example'
+version = 1
+device_name = gethostname()
+device_id = gethostname()
+client.config.app(app_name, version, device_name, device_id)
+
+server_url = 'http://hostname:port'
+username = 'USERNAME'
+password = 'PASSWORD'
+
+client.auth.login(server_url, username, password)
+```
+
+
+For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
 
 ## Changes from Jellyfin Kodi
 
