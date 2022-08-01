@@ -21,6 +21,7 @@ establish a session, please see [clients.py](https://github.com/iwalton3/jellyfi
    - `audio_url` to return the URL to an audio file
  - Add parameters `aid=None, sid=None, start_time_ticks=None, is_playback=True` to API call `get_play_info`.
  - Add timesync manager and SyncPlay API methods.
+ - Remove usage of `six` module.
 
 ## Contributing
 
