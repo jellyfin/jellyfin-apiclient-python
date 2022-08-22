@@ -84,10 +84,23 @@ class API(object):
         return self._get("System/Info/Public")
 
     def command(self, id, command, params=None, json=None):
-        return self._post("Sessions/%s/Command" % id, json = {"Name": command, "Arguments": json}, params=params)
+        return self._post(
+            "Sessions/%s/Command" % id,
+            json={"Name": command, "Arguments": json},
+            params=params,
+        )
 
     def remote(self, id, command, params=None, json=None):
-        return self._post("Sessions/%s/Playing/%s" % id, command, json = {"Name": command, "Arguments": json}, params=params)
+        handler = (
+            "Sessions/%s/Playing/%s" % (id, command)
+            if command
+            else "Sessions/%s/Playing" % id
+        )
+        return self._post(
+            handler,
+            json=json,
+            params=params,
+        )
 
     def sessions(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
@@ -394,29 +407,38 @@ class API(object):
     def remote_playpause(self, id):
         return self.remote(id, "PlauPause")
 
-    def remote_seek(self, id, ticks, json={}):
+    def remote_seek(self, id, ticks, params={}, json={}):
         """Set the volume on the sessions.
         
             @id: The session id to control
             @ticks: The position (in ticks) to seek to"""
-        return self.sessions(id, "Seek", json={'seekPositionTicks': ticks, **json})
+        return self.remote(
+            id, "Seek", params={"seekPositionTicks": ticks, **params}, json=json
+        )
 
     def remote_stop(self, id):
-        return self.sessions(id, "Stop")
+        return self.remote(id, "Stop")
 
     def remote_unpause(self, id):
-        return self.sessions(id, "Unpause")
+        return self.remote(id, "Unpause")
 
-    def remote_play_media(self, id: str, item_ids: list[str], command: str='PlayNow', json={}):
+    def remote_play_media(
+        self, id: str, item_ids: list[str], command: str = "PlayNow", params={}, json={}
+    ):
         """Instruct the session to play some media
         
             @id: The session id to control
             @item_ids: A list of items to play
             @command: When to play. (*PlayNow*, PlayNext, PlayLast, PlayInstantMix, PlayShuffle)
         """
-        return self.sessions(id, "Play", json={"playCommand": command, "itemIds": item_ids, **json})
+        return self.remote(
+            id,
+            None,
+            json=json,
+            params={"playCommand": command, "itemIds": item_ids, **params},
+        )
 
-    def remote_set_volume(self, id: str, volume: int, json):
+    def remote_set_volume(self, id: str, volume: int, json={}):
         """Set the volume on the sessions.
         
             @id: The session id to control
