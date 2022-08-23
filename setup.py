@@ -20,5 +20,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=['requests', 'urllib3', 'websocket_client', 'six', 'certifi']
+    install_requires=['requests', 'urllib3', 'websocket_client', 'certifi']
 )
