@@ -405,7 +405,7 @@ class API(object):
         return self.remote(id, "Pause")
 
     def remote_playpause(self, id):
-        return self.remote(id, "PlauPause")
+        return self.remote(id, "PlayPause")
 
     def remote_seek(self, id, ticks, params={}, json={}):
         """Set the volume on the sessions.
