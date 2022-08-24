@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='jellyfin-apiclient-python',
-    version='1.8.1',
+    version='1.9.0',
     author="Ian Walton",
     author_email="iwalton3@gmail.com",
     description="Python API client for Jellyfin",
