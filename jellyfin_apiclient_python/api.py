@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import List
 from datetime import datetime
 import requests
 import json
@@ -422,7 +423,7 @@ class API(object):
         return self.remote(id, "Unpause")
 
     def remote_play_media(
-        self, id: str, item_ids: list[str], command: str = "PlayNow", params={}, json={}
+        self, id: str, item_ids: List[str], command: str = "PlayNow", params={}, json={}
     ):
         """Instruct the session to play some media
         
