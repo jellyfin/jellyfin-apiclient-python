@@ -67,13 +67,16 @@ class WSClient(threading.Thread):
             self.global_wsc = self.wsc
 
         while not self.stop and not self.global_stop:
-            if not verify:
-                # https://stackoverflow.com/questions/48740053/
-                self.wsc.run_forever(
-                    ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
-                )
+            if server.startswith('wss'):
+                if not verify:
+                    # https://stackoverflow.com/questions/48740053/
+                    self.wsc.run_forever(
+                        ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
+                    )
+                else:
+                    self.wsc.run_forever(ping_interval=10, sslopt={"ca_certs": certifi.where()})
             else:
-                self.wsc.run_forever(ping_interval=10, sslopt={"ca_certs": certifi.where()})
+                self.wsc.run_forever(ping_interval=10)
 
             if not self.stop:
                 break
