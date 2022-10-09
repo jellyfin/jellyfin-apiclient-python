@@ -373,6 +373,7 @@ class ConnectionManager(object):
 
         server['Name'] = system_info['ServerName']
         server['Id'] = system_info['Id']
+        server['Version'] = system_info['Version']
 
         if system_info.get('address'):
             server['address'] = system_info['address']
