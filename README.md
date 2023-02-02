@@ -6,8 +6,59 @@ This is the API client from Jellyfin Kodi extracted as a python package so that 
 
 This client can be installed with `pip3 install jellyfin-apiclient-python` and imported with `import jellyfin_apiclient_python`.
 
-There is no documentation for this API at this time. For information on how to create a client and
-establish a session, please see [clients.py](https://github.com/iwalton3/jellyfin-mpv-shim/blob/master/jellyfin_mpv_shim/clients.py) from Jellyfin MPV Shim. For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
+### Creating a client
+
+```
+from jellyfin_apiclient_python import JellyfinClient
+client = JellyfinClient()
+```
+
+You need to set some configuration values before you can connect a server:
+
+```
+client.config.app('your_brilliant_app', '0.0.1', 'machine_name', 'unique_id')
+client.config.data["auth.ssl"] = True
+```
+
+### Authenticating to a server
+
+If you do not have a token, you will need to connect via username and password:
+
+```
+client.auth.connect_to_address('server_url')
+client.auth.login('server_url', 'username', 'password')
+```
+
+You can then generate a token:
+
+```
+credentials = client.auth.credentials.get_credentials()
+server = credentials["Servers"][0]
+server["username"] = 'username'
+json.dumps(server)
+```
+
+And if you wish then use that token to authenticate in future:
+
+```
+json.loads(credentials)
+client.authenticate({"Servers": [credentials], discover=False)
+```
+
+### API
+
+The API is accessed via the `jellyfin` attribute of the client. Return values
+are a dictionary with 3 members, "Items", "TotalRecordCount" and "StartIndex"
+
+The easiest way to fetch media objects is by calling `search_media_items`, like
+so:
+
+```
+client.jellyfin.search_media_items(
+    term="And Now for Something Completely Different", media="Videos")
+```
+
+For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
 
 ## Changes from Jellyfin Kodi
 
