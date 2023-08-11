@@ -42,7 +42,7 @@ And if you wish then use that token to authenticate in future:
 
 ```
 json.loads(credentials)
-client.authenticate({"Servers": [credentials], discover=False)
+client.authenticate({"Servers": [credentials]}, discover=False)
 ```
 
 ### API
