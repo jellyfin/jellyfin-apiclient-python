@@ -172,6 +172,10 @@ class ConnectionManager(object):
 
         LOG.info("begin connect_to_server")
 
+        # The port in docker container is not available because it is mapped to the host port
+        # Replace the server address with the predefined address from options if not empty
+        if 'address' in options:
+            server.update({'address': options['address']})
         try:
             result = self.API.get_public_info(server.get('address'))
 
@@ -356,7 +360,7 @@ class ConnectionManager(object):
         self.config.data['auth.server'] = server['address']
         self.config.data['auth.server-name'] = server['Name']
         self.config.data['auth.server=id'] = server['Id']
-        self.config.data['auth.ssl'] = options.get('ssl', self.config.data['auth.ssl'])
+        self.config.data['auth.ssl'] = options.get('ssl', self.config.data['auth.ssl'] if 'auth.ssl' in self.config.data else None)
 
         result = {
             'Servers': [server]

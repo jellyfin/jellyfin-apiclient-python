@@ -117,6 +117,30 @@ class API(object):
             return self._delete("Users/{UserId}%s" % handler, params)
         else:
             return self._get("Users/{UserId}%s" % handler, params)
+    
+    def media_folders(self, handler="", params=None, json=None):
+        return self._get("Library/MediaFolders/", params)
+
+    def virtual_folders(self, handler="", action="GET", params=None, json=None):
+        if action == "POST":
+            return self._post("Library/VirtualFolders", json, params)
+        elif action == "DELETE":
+            return self._delete("Library/VirtualFolders", params)
+        else:
+            return self._get("Library/VirtualFolders", params)
+
+    def physical_paths(self, handler="", params=None, json=None):
+        return self._get("Library/PhysicalPaths/", params)
+
+    def folder_contents(self, abspath="/", params={}, json=None):
+        params['path'] = abspath
+        params['includeFiles'] = params['includeFiles'] if 'includeFiles' in params else True
+        params['includeDirectories'] = params['includeDirectories'] if 'includeDirectories' in params else True
+        return self._get("Environment/DirectoryContents", params)
+
+    def scan_library(self):
+        return self._post("Library/Refresh")
+
 
     def items(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
@@ -187,11 +211,94 @@ class API(object):
     def get_user(self, user_id=None):
         return self.users() if user_id is None else self._get("Users/%s" % user_id)
 
+    def create_user(self, name, password):
+        return self._post("Users/New", {"Name": name, "Password": password})
+
+    def delete_user_by_name(self, name):
+        deleted_users = []
+        for user_info in self.get_users():
+            if user_info['Name'] == name:
+                self._delete("Users/%s" % user_info['Id'])
+                deleted_users.append(user_info)
+        return deleted_users
+
     def get_user_settings(self, client="emby"):
         return self._get("DisplayPreferences/usersettings", params={
             "userId": "{UserId}",
             "client": client
         })
+
+    # TODO: The path validation API is not working
+    def validate_path(self, path):
+        json = {
+            "ValidateWritable": False,
+            "Path": path,
+            "IsFile": True
+        }
+        return self._post('Environment/ValidatePath', json=json, params={})
+
+    def get_virtual_folders(self):
+        return self.virtual_folders()
+
+    def create_virtual_folder(self, name, paths=[], collection_type='Movies', json=None, refresh_library=False):
+        params = {
+            'name': name,
+            'collectionType': collection_type,
+            'paths': paths,
+            'refreshLibrary': refresh_library
+        }
+        
+        # Just don't fetch metadata from internet by default
+        if json is None:
+            json = {
+                'LibraryOptions': {
+                    'EnablePhotos': True, 
+                    'EnableRealtimeMonitor': True, 
+                    'EnableChapterImageExtraction': True, 
+                    'ExtractChapterImagesDuringLibraryScan': True, 
+                    'SaveLocalMetadata': False, 
+                    'EnableInternetProviders': False, 
+                    'EnableAutomaticSeriesGrouping': False, 
+                    'EnableEmbeddedTitles': False, 
+                    'EnableEmbeddedEpisodeInfos': False, 
+                    'AutomaticRefreshIntervalDays': 0, 
+                    'PreferredMetadataLanguage': '', 
+                    'MetadataCountryCode': '', 
+                    'SeasonZeroDisplayName': 'Specials', 
+                    'MetadataSavers': [], 
+                    'DisabledLocalMetadataReaders': [], 
+                    'LocalMetadataReaderOrder': ['Nfo'], 
+                    'DisabledSubtitleFetchers': [], 
+                    'SubtitleFetcherOrder': [], 
+                    'SkipSubtitlesIfEmbeddedSubtitlesPresent': False, 
+                    'SkipSubtitlesIfAudioTrackMatches': False, 
+                    'SubtitleDownloadLanguages': [], 
+                    'RequirePerfectSubtitleMatch': True, 
+                    'SaveSubtitlesWithMedia': True, 
+                    'TypeOptions': [
+                        {
+                            'Type': 'Movie', 
+                            'MetadataFetchers': ['TheMovieDb', 'The Open Movie Database'], 
+                            'MetadataFetcherOrder': ['TheMovieDb', 'The Open Movie Database'], 
+                            'ImageFetchers': ['Screen Grabber'], 
+                            'ImageFetcherOrder': ['Screen Grabber'], 
+                            'ImageOptions': []
+                        }
+                    ]
+                }
+            }
+        return self.virtual_folders(handler="", action="POST", params=params, json=json)
+    
+    def rename_virtual_folder(self, name, new_name, refresh_library=False):
+        params = {
+            'name': name,
+            'newName': new_name,
+            'refreshLibrary': refresh_library
+        }
+        return self.virtual_folders(handler="", action="POST", params=params, json={})
+
+    def delete_virtual_folder(self, name):
+        return self.virtual_folders(handler="", action="DELETE", params={'name': name})
 
     def get_views(self):
         return self.users("/Views")
@@ -542,6 +649,26 @@ class API(object):
         LOG.debug(request_settings['headers'])
 
         return request_method(url, **request_settings)
+
+    # TODO: Quick connect is not responding to the requests.
+    def quick_connect_with_token(self, server_url, token):
+        path="Users/AuthenticateWithQuickConnect"
+        authData = {'Token': token}
+
+        headers = self.get_default_headers()
+        headers.update({'Content-type': "application/json"})
+
+        response = self.send_request(server_url, path, method="post", headers=headers,
+                                    data=json.dumps(authData), timeout=(5, 30))
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            LOG.error("Failed to login to server with status code: " + str(response.status_code))
+            LOG.error("Server Response:\n" + str(response.content))
+            LOG.debug(headers)
+            print(headers)
+            return {}
 
     def login(self, server_url, username, password=""):
         path = "Users/AuthenticateByName"
