@@ -199,7 +199,7 @@ class HTTP(object):
         if 'url' not in data:
             data['url'] = "%s/%s" % (self.config.data.get("auth.server", ""), data.pop('handler', ""))
 
-        self._get_header(data)
+        data['headers'] = self._get_default_headers()
         data['timeout'] = data.get('timeout') or self.config.data['http.timeout']
         data['verify'] = data.get('verify') or self.config.data.get('auth.ssl', False)
         data['url'] = self._replace_user_info(data['url'])
@@ -219,39 +219,29 @@ class HTTP(object):
             if isinstance(value, str):
                 params[key] = self._replace_user_info(value)
 
-    def _get_header(self, data):
+    def _get_authenication_header(self):
+        params = {
+            "Client": self.config.data['app.name'],
+            "Device": self.config.data['app.device_name'],
+            "DeviceId": self.config.data['app.device_id'],
+            "Version": self.config.data['app.version']
+            }
+        if "auth.token" in self.config.data:
+            params["Token"] = self.config.data['auth.token']
+        param_line = ", ".join(f'{k}="{v}"' for k, v in params.items())
+        return f"MediaBrowser {param_line}"
 
-        data['headers'] = data.setdefault('headers', {})
-
-        if not data['headers']:
-            data['headers'].update({
-                'Content-type': "application/json",
-                'Accept-Charset': "UTF-8,*",
-                'Accept-encoding': "gzip",
-                'User-Agent': self.config.data['http.user_agent'] or "%s/%s" % (self.config.data.get('app.name', 'Jellyfin for Kodi'), self.config.data.get('app.version', "0.0.0"))
-            })
-
-        if 'x-emby-authorization' not in data['headers']:
-            self._authorization(data)
-
-        return data
-
-    def _authorization(self, data):
-
-        auth = "MediaBrowser "
-        auth += "Client=%s, " % self.config.data.get('app.name', "Jellyfin for Kodi")
-        auth += "Device=%s, " % self.config.data.get('app.device_name', 'Unknown Device')
-        auth += "DeviceId=%s, " % self.config.data.get('app.device_id', 'Unknown Device id')
-        auth += "Version=%s" % self.config.data.get('app.version', '0.0.0')
-
-        data['headers'].update({'x-emby-authorization': auth})
-
-        if self.config.data.get('auth.token') and self.config.data.get('auth.user_id'):
-            
-            auth += ', UserId=%s' % self.config.data.get('auth.user_id')
-            data['headers'].update({'x-emby-authorization': auth, 'X-MediaBrowser-Token': self.config.data.get('auth.token')})
-
-        return data
+    def _get_default_headers(self, content_type="application/json"):
+        app_name = f"{self.config.data.get('app.name', 'Jellyfin for Kodi')}/{self.config.data.get('app.version', '0.0.0')}"
+        return {
+            "Accept": "application/json",
+            "Content-type": content_type,
+            "X-Application": app_name,
+            "Accept-Charset": "UTF-8,*",
+            "Accept-encoding": "gzip",
+            "User-Agent": self.config.data['http.user_agent'] or app_name,
+            "Authorization": self._get_authenication_header()
+        }
 
     def _requests(self, session, action, **kwargs):
 

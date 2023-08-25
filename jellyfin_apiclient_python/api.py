@@ -508,21 +508,7 @@ class API(object):
         })
 
     def get_default_headers(self):
-        auth = "MediaBrowser "
-        auth += "Client=%s, " % self.config.data['app.name']
-        auth += "Device=%s, " % self.config.data['app.device_name']
-        auth += "DeviceId=%s, " % self.config.data['app.device_id']
-        auth += "Version=%s" % self.config.data['app.version']
-
-        return {
-            "Accept": "application/json",
-            "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Application": "%s/%s" % (self.config.data['app.name'], self.config.data['app.version']),
-            "Accept-Charset": "UTF-8,*",
-            "Accept-encoding": "gzip",
-            "User-Agent": self.config.data['http.user_agent'] or "%s/%s" % (self.config.data['app.name'], self.config.data['app.version']),
-            "x-emby-authorization": auth
-        }
+        return self.client._get_default_headers(content_type="application/x-www-form-urlencoded; charset=UTF-8")
 
     def send_request(self, url, path, method="get", timeout=None, headers=None, data=None, session=None):
         request_method = getattr(session or requests, method.lower())
@@ -572,11 +558,8 @@ class API(object):
         return {}
 
     def validate_authentication_token(self, server):
-        authTokenHeader = {
-                    'X-MediaBrowser-Token': server['AccessToken']
-                }
         headers = self.get_default_headers()
-        headers.update(authTokenHeader)
+        headers["Authorization"] += f", Token=\"{server['AccessToken']}\""
 
         response = self.send_request(server['address'], "system/info", headers=headers)
         return response.json() if response.status_code == 200 else {}
