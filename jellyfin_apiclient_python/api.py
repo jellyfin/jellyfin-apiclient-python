@@ -193,6 +193,15 @@ class API(object):
             "client": client
         })
 
+    def new_user(self, name, pw):
+        return self._post("Users/New", {
+            "name": name,
+            "Password": pw
+        })
+    
+    def delete_user(self, userID):
+        return self._delete(f"Users/{userID}")
+
     def get_views(self):
         return self.users("/Views")
 
