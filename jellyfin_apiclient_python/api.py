@@ -48,7 +48,7 @@ class API(object):
         request.update({'type': action, 'handler': url})
 
         return self.client.request(request)
-    
+
     def _http_url(self, action, url, request={}):
         request.update({"type": action, "handler": url})
 
@@ -198,7 +198,7 @@ class API(object):
             "name": name,
             "Password": pw
         })
-    
+
     def delete_user(self, userID):
         return self._delete(f"Users/{userID}")
 
@@ -288,9 +288,47 @@ class API(object):
             'IncludeItemTypes': media
         })
 
-    def search_media_items(self, term=None, media=None, limit=20):
+    def search_media_items(self, term=None, year=None, media=None, limit=20):
+        """
+        Description:
+            Search for media using terms, production year(s) and media type
+
+        Args:
+            >>> term: str
+            >>> year: int
+            >>> media: str
+            >>> limit: int
+
+        Returns:
+            >>> dict
+
+        Raises:
+            >>> None
+
+        Example:
+
+            -
+
+            INPUT:
+            >>> client.jellyfin.search_media_items(term='The Lion King', year=1994, media='Movie', limit=1)
+
+            -
+
+            OUTPUT:
+            >>> 'Items':
+                [
+                    {
+                        'Name': 'The Lion King',
+                        ...
+                        'ProductionYear': 1994
+                        ...
+                        'Type': 'Movie'
+                    }
+                ]
+        """
         return self.user_items(params={
             'searchTerm': term,
+            'years': year,
             'Recursive': True,
             'IncludeItemTypes': media,
             'Limit': limit
@@ -418,7 +456,7 @@ class API(object):
 
     def remote_seek(self, id, ticks, params={}, json={}):
         """Set the volume on the sessions.
-        
+
             @id: The session id to control
             @ticks: The position (in ticks) to seek to"""
         return self.remote(
@@ -435,7 +473,7 @@ class API(object):
         self, id: str, item_ids: List[str], command: str = "PlayNow", params={}, json={}
     ):
         """Instruct the session to play some media
-        
+
             @id: The session id to control
             @item_ids: A list of items to play
             @command: When to play. (*PlayNow*, PlayNext, PlayLast, PlayInstantMix, PlayShuffle)
@@ -449,7 +487,7 @@ class API(object):
 
     def remote_set_volume(self, id: str, volume: int, json={}):
         """Set the volume on the sessions.
-        
+
             @id: The session id to control
             @volume: The volume normalized from 0 to 100"""
         return self.command(id, "SetVolume", json={"Volume": volume, **json})
@@ -599,7 +637,7 @@ class API(object):
         # Measure time as close to the call as is possible.
         server_address = self.config.data.get("auth.server")
         session = self.client.session
-        
+
         response = self.send_request(server_address, "GetUTCTime", session=session)
         response_received = datetime.utcnow()
         request_sent = response_received - response.elapsed
@@ -614,7 +652,7 @@ class API(object):
             "response_sent": response_sent,
             "response_received": response_received
         }
-    
+
     def get_sync_play(self, item_id=None):
         params = {}
         if item_id is not None:
@@ -628,7 +666,7 @@ class API(object):
 
     def leave_sync_play(self):
         return self._post("SyncPlay/Leave")
-    
+
     def play_sync_play(self):
         """deprecated (<= 10.7.0)"""
         return self._post("SyncPlay/Play")
@@ -644,7 +682,7 @@ class API(object):
         return self._post("SyncPlay/Seek", {
             "PositionTicks": position_ticks
         })
-    
+
     def buffering_sync_play(self, when, position_ticks, is_playing, item_id):
         return self._post("SyncPlay/Buffering", {
             "When": when.isoformat() + "Z",
