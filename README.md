@@ -74,6 +74,7 @@ For details on what the individual API calls do or how to do a certain task, you
  - Add timesync manager and SyncPlay API methods.
  - Remove usage of `six` module.
  - Add group of `remote_` API calls to remote control another session
+ - Configurable item refreshes allowing custom refresh logic (can also iterate through a list of items)
 
 ## Contributing
 
