@@ -418,14 +418,64 @@ class API(object):
             'Fields': info()
         })
 
-    def refresh_item(self, item_id):
-        return self.items("/%s/Refresh" % item_id, "POST", json={
-            'Recursive': True,
-            'ImageRefreshMode': "FullRefresh",
-            'MetadataRefreshMode': "FullRefresh",
-            'ReplaceAllImages': False,
-            'ReplaceAllMetadata': True
-        })
+    def refresh_item(self, item_id, recursive=True, image_refresh='FullRefresh', metadata_refresh='FullRefresh', replace_images=False, replace_metadata=True, preset=None):
+        """
+        Description:
+
+            - Refreshes media items on server. Pass a single item or pass multiple as a list.
+            - Use of presets lets you run a refresh similar to Jellyfin's Web UI.
+            - preset='missing' searches for missing metadata, while preset='replace' replaces all metadata.
+            - You may also configure the refresh manually by passing a value for each parameter.
+
+        Args:
+            >>> item_id: str or list
+            >>> recursive: bool
+            >>> image_refresh: str 'Default' or 'ValidationOnly' or 'FullRefresh'
+            >>> image_refresh: str 'Default' or 'ValidationOnly' or 'FullRefresh'
+            >>> replace_images: bool
+            >>> replace_metadata: bool
+            >>> preset: str 'missing' or 'replace'
+
+        Examples:
+            >>> client.jellyfin.refresh_item('123456abcd', preset='missing')
+            -
+            >>> client.jellyfin.refresh_item(['123456abcd', 'abcd123456'])
+        """
+
+        # Presets modeled after Jellyfin's Web UI
+        if preset:
+            if preset.lower() == 'missing':
+                recursive = True
+                image_refresh = 'FullRefresh'
+                metadata_refresh = 'FullRefresh'
+                replace_images = False
+                replace_metadata = False
+            elif preset.lower() == 'replace':
+                recursive = True
+                image_refresh = 'FullRefresh'
+                metadata_refresh = 'FullRefresh'
+                replace_images = True
+                replace_metadata = True
+
+        params = {
+            'Recursive': recursive,
+            'ImageRefreshMode': image_refresh,
+            'MetadataRefreshMode': metadata_refresh,
+            'ReplaceAllImages': replace_images,
+            'ReplaceAllMetadata': replace_metadata
+        }
+
+        # If item_id is a list, loop through each item and refresh it
+        if isinstance(item_id, list):
+            results = []
+            for i in item_id:
+                result = self.items("/%s/Refresh" % i, "POST", params=params)
+                results.append(result)
+            return results
+        else:
+            # If item_id is a single string, just refresh that item
+            return self.items("/%s/Refresh" % item_id, "POST", params=params)
+
 
     def favorite(self, item_id, option=True):
         return self.users("/FavoriteItems/%s" % item_id, "POST" if option else "DELETE")
