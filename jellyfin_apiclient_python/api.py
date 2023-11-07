@@ -288,7 +288,7 @@ class API(object):
             'IncludeItemTypes': media
         })
 
-    def search_media_items(self, term=None, year=None, media=None, limit=20):
+    def search_media_items(self, term=None, year=None, media=None, limit=20, parent_id=None):
         """
         Description:
             Search for media using terms, production year(s) and media type
@@ -298,6 +298,7 @@ class API(object):
             >>> year: int
             >>> media: str
             >>> limit: int
+            >>> parent_id: str
 
         Returns:
             >>> dict
@@ -331,7 +332,8 @@ class API(object):
             'years': year,
             'Recursive': True,
             'IncludeItemTypes': media,
-            'Limit': limit
+            'Limit': limit,
+            'parentId':parent_id
         })
 
     def get_channels(self):
