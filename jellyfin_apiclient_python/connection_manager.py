@@ -48,7 +48,7 @@ class ConnectionManager(object):
         self.user = None
         credentials = self.credentials.get_credentials()
         credentials['Servers'] = list()
-        self.credentials.get_credentials(credentials)
+        self.credentials.set_credentials(credentials)
 
         self.config.auth(None, None)
 
