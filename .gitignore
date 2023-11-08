@@ -2,3 +2,4 @@ __pycache__
 dist
 build
 jellyfin_apiclient_python.egg-info
+.tox

@@ -60,6 +60,14 @@ client.jellyfin.search_media_items(
 
 For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
 
+## Running the tests
+
+The test suite is run via `tox`, and you can install it from PyPi.
+
+ - To run the linter: `tox -elint`
+ - To run the test suite, for Python 3.9: `tox -epy39`
+ - You can run multiple environments, if you wish: `tox -elint,py311`
+
 ## Changes from Jellyfin Kodi
 
  - Removal of `websocket.py` (now a dependency to `websocket_client`).

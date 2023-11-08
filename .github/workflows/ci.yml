@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+    branches: master
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test (Python ${{ matrix.python-version }})
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "${{ matrix.python-version }}"
+      - name: Install tox
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox tox-gh-actions
+      - name: Run tests
+        run: tox
+
