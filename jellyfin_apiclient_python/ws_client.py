@@ -119,7 +119,7 @@ class WSClient(threading.Thread):
 
         if data is None:
             data = {}
-        elif type(data) is not dict:
+        elif not isinstance(data, dict):
             data = {"value": data}
 
         if not self.client.config.data['app.default']:

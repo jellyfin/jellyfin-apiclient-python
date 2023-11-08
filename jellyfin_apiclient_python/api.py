@@ -617,7 +617,7 @@ class API(object):
         }
 
         # Changed to use non-Kodi specific setting.
-        if self.config.data.get('auth.ssl') == False:
+        if self.config.data.get('auth.ssl') is False:
             request_settings["verify"] = False
 
         LOG.info("Sending %s request to %s" % (method, path))
