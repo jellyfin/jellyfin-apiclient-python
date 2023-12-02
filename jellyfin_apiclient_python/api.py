@@ -138,8 +138,8 @@ class API(object):
     def artwork(self, item_id, art, max_width, ext="jpg", index=None):
         params = {"MaxWidth": max_width, "format": ext}
         handler = ("Items/%s/Images/%s" % (item_id, art) if index is None
-            else "Items/%s/Images/%s/%s" % (item_id, art, index)
-        )
+                   else "items/%s/images/%s/%s" % (item_id, art, index)
+                   )
 
         return self._get_url(handler, params)
 
@@ -294,38 +294,27 @@ class API(object):
             Search for media using terms, production year(s) and media type
 
         Args:
-            >>> term: str
-            >>> year: int
-            >>> media: str
-            >>> limit: int
-            >>> parent_id: str
+            term (str):
+            year (int):
+            media (str):
+            limit (int):
+            parent_id (str)
 
         Returns:
-            >>> dict
-
-        Raises:
-            >>> None
+            dict
 
         Example:
-
-            -
-
-            INPUT:
-            >>> client.jellyfin.search_media_items(term='The Lion King', year=1994, media='Movie', limit=1)
-
-            -
-
-            OUTPUT:
-            >>> 'Items':
-                [
-                    {
-                        'Name': 'The Lion King',
-                        ...
-                        'ProductionYear': 1994
-                        ...
-                        'Type': 'Movie'
-                    }
-                ]
+            >>> result = client.jellyfin.search_media_items(term='The Lion King', year=1994, media='Movie', limit=1)
+            >>> result['Items']
+            [
+                {
+                    'Name': 'The Lion King',
+                    ...
+                    'ProductionYear': 1994
+                    ...
+                    'Type': 'Movie'
+                }
+            ]
         """
         return self.user_items(params={
             'searchTerm': term,
@@ -333,7 +322,7 @@ class API(object):
             'Recursive': True,
             'IncludeItemTypes': media,
             'Limit': limit,
-            'parentId':parent_id
+            'parentId': parent_id,
         })
 
     def get_channels(self):
@@ -430,13 +419,13 @@ class API(object):
             - You may also configure the refresh manually by passing a value for each parameter.
 
         Args:
-            >>> item_id: str or list
-            >>> recursive: bool
-            >>> image_refresh: str 'Default' or 'ValidationOnly' or 'FullRefresh'
-            >>> image_refresh: str 'Default' or 'ValidationOnly' or 'FullRefresh'
-            >>> replace_images: bool
-            >>> replace_metadata: bool
-            >>> preset: str 'missing' or 'replace'
+            item_id (str | list):
+            recursive (bool):
+            image_refresh (str):  'Default' or 'ValidationOnly' or 'FullRefresh'
+            image_refresh (str): 'Default' or 'ValidationOnly' or 'FullRefresh'
+            replace_images (bool):
+            replace_metadata (bool)
+            preset (str): 'missing' or 'replace'
 
         Examples:
             >>> client.jellyfin.refresh_item('123456abcd', preset='missing')
@@ -477,7 +466,6 @@ class API(object):
         else:
             # If item_id is a single string, just refresh that item
             return self.items("/%s/Refresh" % item_id, "POST", params=params)
-
 
     def favorite(self, item_id, option=True):
         return self.users("/FavoriteItems/%s" % item_id, "POST" if option else "DELETE")
@@ -526,9 +514,10 @@ class API(object):
     ):
         """Instruct the session to play some media
 
-            @id: The session id to control
-            @item_ids: A list of items to play
-            @command: When to play. (*PlayNow*, PlayNext, PlayLast, PlayInstantMix, PlayShuffle)
+        Args:
+            id (str): The session id to control
+            item_ids (List[str]): A list of items to play
+            command (str): When to play. (*PlayNow*, PlayNext, PlayLast, PlayInstantMix, PlayShuffle)
         """
         return self.remote(
             id,
@@ -651,7 +640,7 @@ class API(object):
                 LOG.debug(headers)
 
                 return {}
-        except Exception as e: # Find exceptions for likely cases i.e, server timeout, etc
+        except Exception as e:  # Find exceptions for likely cases i.e, server timeout, etc
             LOG.error(e)
 
         return {}
