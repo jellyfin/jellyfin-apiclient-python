@@ -35,14 +35,11 @@ def music_info():
     )
 
 
-class API(object):
-
-    ''' All the api calls to the server.
-    '''
-    def __init__(self, client, *args, **kwargs):
-        self.client = client
-        self.config = client.config
-        self.default_timeout = 5
+class InternalAPIMixin:
+    """
+    A mixin class containing a common set of internal calls the other mixin
+    classes will use.
+    """
 
     def _http(self, action, url, request={}):
         request.update({'type': action, 'handler': url})
@@ -74,11 +71,11 @@ class API(object):
     def _get_stream(self, handler, dest_file, params=None):
         self._http_stream("GET", handler, dest_file, {'params': params})
 
-    #################################################################################################
 
-    # Bigger section of the Jellyfin api
-
-    #################################################################################################
+class BiggerAPIMixin:
+    """
+    Bigger section of the Jellyfin api
+    """
 
     def try_server(self):
         return self._get("System/Info/Public")
@@ -172,11 +169,11 @@ class API(object):
         params = {}
         return self._get_url("Items/%s/Download" % item_id, params)
 
-    #################################################################################################
 
-    # More granular api
-
-    #################################################################################################
+class GranularAPIMixin:
+    """
+    Mixin class containing Jellyfin API granular user-level calls
+    """
 
     def get_users(self):
         return self._get("Users")
@@ -670,11 +667,11 @@ class API(object):
         url = response.url.replace('/system/info/public', '')
         return url
 
-    #################################################################################################
 
-    # Syncplay
-
-    #################################################################################################
+class SyncPlayAPIMixin:
+    """
+    Mixin class containing Jellyfin API calls related to Syncplay
+    """
 
     def _parse_precise_time(self, time):
         # We have to remove the Z and the least significant digit.
@@ -793,3 +790,54 @@ class API(object):
         return self._post("SyncPlay/New", {
             "GroupName": group_name
         })
+
+
+class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
+          SyncPlayAPIMixin):
+    """
+    The Jellyfin Python API client containing all api calls to the server.
+
+    This class implements a subset of the [JellyfinWebAPI]_.
+
+    References:
+        .. [JellyfinWebAPI] https://api.jellyfin.org/
+
+    Example:
+        >>> from jellyfin_apiclient_python import JellyfinClient
+        >>> client = JellyfinClient()
+        >>> #
+        >>> client.config.app(
+        >>>     name='your_brilliant_app',
+        >>>     version='0.0.1',
+        >>>     device_name='machine_name',
+        >>>     device_id='unique_id')
+        >>> client.config.data["auth.ssl"] = True
+        >>> #
+        >>> your_jellyfin_url = 'http://127.0.0.1:8096'  # Use your jellyfin IP / port
+        >>> your_jellyfin_username = 'jellyfin'          # Use your jellyfin userid
+        >>> your_jellyfin_password = ''                  # Use your user's password
+        >>> #
+        >>> client.auth.connect_to_address(your_jellyfin_url)
+        >>> client.auth.login(
+        >>>     server_url=your_jellyfin_url,
+        >>>     username=your_jellyfin_username,
+        >>>     password=your_jellyfin_password
+        >>> )
+        >>> #
+        >>> # Test basic calls
+        >>> system_info = client.jellyfin.get_system_info()
+        >>> print(system_info)
+        >>> media_folders = client.jellyfin.get_media_folders()
+        >>> print(media_folders)
+    """
+
+    def __init__(self, client, *args, **kwargs):
+        """
+        Args:
+            client (jellyfin_apiclient_python.client.JellyfinClient): the client object
+            *args: unused
+            **kwargs: unused
+        """
+        self.client = client
+        self.config = client.config
+        self.default_timeout = 5
