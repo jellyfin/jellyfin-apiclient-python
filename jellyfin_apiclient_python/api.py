@@ -298,7 +298,7 @@ class API(object):
             year (int):
             media (str):
             limit (int):
-            parent_id (str)
+            parent_id (str):
 
         Returns:
             dict
@@ -419,7 +419,7 @@ class API(object):
             - You may also configure the refresh manually by passing a value for each parameter.
 
         Args:
-            item_id (str | list):
+            item_id (str | List[str]): one or more items to refresh
             recursive (bool):
             image_refresh (str):  'Default' or 'ValidationOnly' or 'FullRefresh'
             image_refresh (str): 'Default' or 'ValidationOnly' or 'FullRefresh'
