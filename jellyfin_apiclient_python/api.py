@@ -495,10 +495,13 @@ class API(object):
         return self.remote(id, "PlayPause")
 
     def remote_seek(self, id, ticks, params={}, json={}):
-        """Set the volume on the sessions.
+        """
+        Seek to a specific position in the specified session.
 
-            @id: The session id to control
-            @ticks: The position (in ticks) to seek to"""
+        Args:
+            id (int): The session id to control
+            ticks (int): The position (in ticks) to seek to
+        """
         return self.remote(
             id, "Seek", params={"seekPositionTicks": ticks, **params}, json=json
         )
