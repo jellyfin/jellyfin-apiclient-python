@@ -634,19 +634,24 @@ class GranularAPIMixin:
     def get_server_time(self):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
 
-    def get_play_info(self, item_id, profile, aid=None, sid=None, start_time_ticks=None, is_playback=True):
+    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True):
         args = {
             'UserId': "{UserId}",
-            'DeviceProfile': profile,
             'AutoOpenLiveStream': is_playback,
             'IsPlayback': is_playback
         }
+        if profile is None:
+            args['DeviceProfile'] = profile
         if sid:
             args['SubtitleStreamIndex'] = sid
         if aid:
             args['AudioStreamIndex'] = aid
         if start_time_ticks:
             args['StartTimeTicks'] = start_time_ticks
+        # TODO:
+        # Should this be a get?
+        # https://api.jellyfin.org/#tag/MediaInfo
+        # https://api.jellyfin.org/#tag/MediaInfo/operation/GetPostedPlaybackInfo
         return self.items("/%s/PlaybackInfo" % item_id, "POST", json=args)
 
     def get_live_stream(self, item_id, play_id, token, profile):
