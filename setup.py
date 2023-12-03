@@ -1,11 +1,54 @@
 from setuptools import setup
 
+
+def parse_version(fpath):
+    """
+    Statically parse the version number from a python file
+    """
+    value = static_parse("__version__", fpath)
+    return value
+
+
+def static_parse(varname, fpath):
+    """
+    Statically parse the a constant variable from a python file
+    """
+    import ast
+    from os.path import exists
+
+    if not exists(fpath):
+        raise ValueError("fpath={!r} does not exist".format(fpath))
+    with open(fpath, "r") as file_:
+        sourcecode = file_.read()
+    pt = ast.parse(sourcecode)
+
+    class StaticVisitor(ast.NodeVisitor):
+        def visit_Assign(self, node):
+            for target in node.targets:
+                if getattr(target, "id", None) == varname:
+                    self.static_value = node.value.s
+
+    visitor = StaticVisitor()
+    visitor.visit(pt)
+    try:
+        value = visitor.static_value
+    except AttributeError:
+        import warnings
+
+        value = "Unknown {}".format(varname)
+        warnings.warn(value)
+    return value
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+
+INIT_PATH = "jellyfin_apiclient_python/__init__.py"
+VERSION = parse_version(INIT_PATH)
+
 setup(
     name='jellyfin-apiclient-python',
-    version='1.9.2',
+    version=VERSION,
     author="Ian Walton",
     author_email="iwalton3@gmail.com",
     description="Python API client for Jellyfin",
