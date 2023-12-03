@@ -530,10 +530,13 @@ class API(object):
         )
 
     def remote_set_volume(self, id: str, volume: int, json={}):
-        """Set the volume on the sessions.
+        """
+        Set the volume on the sessions.
 
-            @id: The session id to control
-            @volume: The volume normalized from 0 to 100"""
+        Args:
+            id (int): The session id to control
+            volume (int): The volume normalized from 0 to 100
+        """
         return self.command(id, "SetVolume", json={"Volume": volume, **json})
 
     def remote_mute(self, id):
