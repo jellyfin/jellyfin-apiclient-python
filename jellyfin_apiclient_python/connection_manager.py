@@ -56,8 +56,10 @@ class ConnectionManager(object):
 
         LOG.info("revoking token")
 
-        self['server']['AccessToken'] = None
-        self.credentials.set_credentials(self.credentials.get())
+        credentials = self.credentials.get_credentials()
+        for server in credentials["Servers"]:
+            server["AccessToken"] = None
+        self.credentials.set_credentials(credentials)
 
         self.config.data['auth.token'] = None
 
