@@ -904,6 +904,29 @@ class ExperimentalAPIMixin:
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
 
+    def get_now_playing(self, session_id):
+        """
+        Simplified API to get now playing information for a session including the
+        play state.
+
+        References:
+            https://github.com/jellyfin/jellyfin/issues/9665
+        """
+        resp = self.sessions(params={
+            'Id': session_id,
+            'fields': ['PlayState']
+        })
+        found = None
+        for item in resp:
+            if item['Id'] == session_id:
+                found = item
+        if not found:
+            raise KeyError(f'No session_id={session_id}')
+        play_state = found['PlayState']
+        now_playing = found['NowPlayingItem']
+        now_playing['PlayState'] = play_state
+        return now_playing
+
 
 class CollectionAPIMixin:
     """
