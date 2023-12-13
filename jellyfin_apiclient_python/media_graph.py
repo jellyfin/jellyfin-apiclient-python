@@ -50,6 +50,7 @@ class MediaGraph:
 
     @classmethod
     def demo_client(cls):
+        # TODO: Ensure test environment can spin up a dummy jellyfin server.
         from jellyfin_apiclient_python import JellyfinClient
         client = JellyfinClient()
         client.config.app(
@@ -117,7 +118,7 @@ class MediaGraph:
 
         pman = progiter.ProgressManager()
         with pman:
-            media_folders = client.jellyfin.get_media_folders()
+            media_folders = client.jellyfin.get_media_folders(fields=['Path'])
             for folder in pman.progiter(media_folders['Items'], desc='Media Folders'):
                 collection_type = folder.get('CollectionType', None)
                 if include_collection_types is not None:
@@ -127,7 +128,27 @@ class MediaGraph:
                     if collection_type not in exclude_collection_types:
                         continue
 
-                item = folder
+                if 1:
+                    item = folder
+                else:
+                    # Weirdness is not needed if we have access to fields
+                    # in get-media-folders
+                    # Query API for children (todo: we want to async this)
+                    item_id = folder['Id']
+                    # This returns all root items, I'm not sure why
+                    # hack around it for now.
+                    _weird_result = client.jellyfin.user_items(params={
+                        'Id': item_id,
+                        'Recursive': False,
+                        'fields': ['Path'],
+                    })
+                    item = None
+                    for cand in _weird_result['Items']:
+                        if cand['Id'] == item_id:
+                            item = cand
+                            break
+                    assert item is not None
+
                 self._media_root_nodes.append(item['Id'])
                 graph.add_node(item['Id'], item=item, properties=dict(expanded=False))
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
