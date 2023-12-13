@@ -205,8 +205,11 @@ class API(object):
     def get_views(self):
         return self.users("/Views")
 
-    def get_media_folders(self):
-        return self.users("/Items")
+    def get_media_folders(self, fields=None):
+        params = None
+        if fields is not None:
+            params = {'fields': fields}
+        return self.users("/Items", params=params)
 
     def get_item(self, item_id):
         return self.users("/Items/%s" % item_id)
