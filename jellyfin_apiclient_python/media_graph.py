@@ -12,7 +12,7 @@ class MediaGraph:
         from jellyfin_apiclient_python.media_graph import *  # NOQA
         client = MediaGraph.demo_client()
         self = MediaGraph(client)
-        self.config['initial_depth'] = None
+        self.walk_config['initial_depth'] = None
         self.setup()
         self.tree()
 
@@ -39,10 +39,13 @@ class MediaGraph:
     def __init__(self, client):
         self.client = client
         self.graph = None
-        self.config = {
+        self.walk_config = {
             'initial_depth': 0,
             'include_collection_types': None,
             'exclude_collection_types': None,
+        }
+        self.display_config = {
+            'show_path': False,
         }
         self._cwd = None
         self._cwd_children = None
@@ -85,7 +88,7 @@ class MediaGraph:
         else:
             if not self.graph.nodes[node]['item']['IsFolder']:
                 raise Exception('can only cd into a folder')
-            self.open_node(node)
+            self.open_node(node, verbose=0)
             self._cwd_children = list(self.graph.succ[node])
 
     def __truediv__(self, node):
@@ -102,9 +105,9 @@ class MediaGraph:
         graph = nx.DiGraph()
         self.graph = graph
 
-        include_collection_types = self.config.get('include_collection_types', None)
-        exclude_collection_types = self.config.get('exclude_collection_types', None)
-        initial_depth = self.config['initial_depth']
+        include_collection_types = self.walk_config.get('include_collection_types', None)
+        exclude_collection_types = self.walk_config.get('exclude_collection_types', None)
+        initial_depth = self.walk_config['initial_depth']
 
         self._media_root_nodes = []
 
@@ -153,7 +156,7 @@ class MediaGraph:
                 graph.add_node(item['Id'], item=item, properties=dict(expanded=False))
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
 
-    def open_node(self, node, verbose=1):
+    def open_node(self, node, verbose=0):
         if verbose:
             print(f'open node={node}')
         node_data = self.graph.nodes[node]
@@ -180,8 +183,9 @@ class MediaGraph:
         limit is reached.
         """
         client = self.client
-        folder_prog = pman.progiter(desc=f'Walking {item["Name"]}')
-        folder_prog.start()
+        if pman is not None:
+            folder_prog = pman.progiter(desc=f'Walking {item["Name"]}')
+            folder_prog.start()
 
         type_add_blocklist = {
             'UserView',
@@ -201,7 +205,8 @@ class MediaGraph:
 
         stack = [StackFrame(item, 0)]
         while stack:
-            folder_prog.step()
+            if pman is not None:
+                folder_prog.step()
             frame = stack.pop()
 
             if max_depth is not None and frame.depth >= max_depth:
@@ -214,13 +219,42 @@ class MediaGraph:
             stats['latest_name'] = parent['Name']
             stats['latest_path'] = parent.get('Path', None)
 
+            parent_id = parent['Id']
+
+            HANDLE_SPECIAL_FEATURES = 1
+            if HANDLE_SPECIAL_FEATURES:
+                if parent['Type'] in {'Series', 'Season'}:
+                    # Not sure why special features are not included as children
+                    special_features = client.jellyfin.user_items(f'/{parent_id}/SpecialFeatures')
+                    if special_features:
+                        # Hack in a dummy special features item into the graph
+                        special_features_id = parent_id + '/SpecialFeatures'
+                        special_features_item = {
+                            'Name': 'Special Features',
+                            'Id': special_features_id,
+                            'Type': 'SpecialFeatures',
+                        }
+                        special_parent = special_features_item
+                        graph.add_node(special_parent['Id'], item=special_parent, properties=dict(expanded=True))
+                        graph.add_edge(parent['Id'], special_parent['Id'])
+                        stats['edge_types'][(parent['Type'], special_parent['Type'])] += 1
+                        for special in special_features:
+                            stats['edge_types']['SpecialFeatures', special['Type']] += 1
+                            if special['Id'] in graph.nodes:
+                                stats['nondag_edge_types'][(parent['Type'], special['Type'])] += 1
+                                assert False
+                            else:
+                                # Add child to graph
+                                graph.add_node(special['Id'], item=special, properties=dict(expanded=False))
+                                graph.add_edge(special_parent['Id'], special['Id'])
+                                assert not special['IsFolder']
+
             # Query API for children (todo: we want to async this)
             children = client.jellyfin.user_items(params={
-                'ParentId': parent['Id'],
+                'ParentId': parent_id,
                 'Recursive': False,
                 'fields': ['Path'],
             })
-
             if children and 'Items' in children:
                 stats['total'] += len(children['Items'])
                 for child in children['Items']:
@@ -257,7 +291,7 @@ class MediaGraph:
             'BEAMED_SIXTEENTH_NOTES': '♬',
             'MOVIE_CAMERA': '🎥',
             'TELEVISION': '📺',
-            # '🎞'
+            'FILM_FRAMES': '🎞',
         }
 
         url = self.client.http.config.data['auth.server']
@@ -291,6 +325,9 @@ class MediaGraph:
             elif item['Type'] == 'Episode':
                 color = None
                 type_glyph = glyphs['TELEVISION']
+            elif item['Type'] == 'Video':
+                color = None
+                type_glyph = glyphs['FILM_FRAMES']
             elif item['Type'] == 'Audio':
                 color = None
                 type_glyph = glyphs['BEAMED_SIXTEENTH_NOTES']
@@ -306,9 +343,10 @@ class MediaGraph:
 
             namerep = item['Name']
             path = item.get('Path', None)
-            if path is not None:
-                namerep = item['Name'] + ' - ' + path
-                # namerep = path
+            if self.display_config['show_path']:
+                if path is not None:
+                    namerep = item['Name'] + ' - ' + path
+                    # namerep = path
 
             item_id_link = f'{url}/web/index.html#!/details?id={item["Id"]}'
             item_id_rep = item["Id"]
