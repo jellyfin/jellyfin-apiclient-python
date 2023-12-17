@@ -156,7 +156,7 @@ class MediaGraph:
                 graph.add_node(item['Id'], item=item, properties=dict(expanded=False))
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
 
-    def open_node(self, node, verbose=0):
+    def open_node(self, node, verbose=0, max_depth=1):
         if verbose:
             print(f'open node={node}')
         node_data = self.graph.nodes[node]
@@ -170,7 +170,7 @@ class MediaGraph:
             'latest_name': None,
         }
         with pman:
-            self._walk_node(item, pman, stats, max_depth=1)
+            self._walk_node(item, pman, stats, max_depth=max_depth)
         self._label_graph(sources=[node])
 
         if verbose:
@@ -368,6 +368,17 @@ class MediaGraph:
         rprint(f'node={node}')
         rprint(f'properties = {ub.urepr(properties, nl=1)}')
         rprint(f'item = {ub.urepr(item, nl=1)}')
+
+    def find_node(self, pattern, data=False):
+        graph = self.graph
+        for node in graph.nodes:
+            node_data = graph.nodes[node]
+            item = node_data['item']
+            if pattern in item['Name']:
+                if data:
+                    yield node, node_data
+                else:
+                    yield node
 
 
 def reachable(graph, sources=None):
