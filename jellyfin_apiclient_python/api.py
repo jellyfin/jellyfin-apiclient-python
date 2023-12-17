@@ -135,9 +135,11 @@ class BiggerAPIMixin:
         params['includeDirectories'] = params.get('includeDirectories', True)
         return self._get("Environment/DirectoryContents", params)
 
-    def scan_library(self):
+    def refresh_library(self):
+        """
+        Starts a library scan.
+        """
         return self._post("Library/Refresh")
-
 
     def items(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
