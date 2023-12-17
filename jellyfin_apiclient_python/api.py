@@ -131,8 +131,8 @@ class BiggerAPIMixin:
 
     def folder_contents(self, abspath="/", params={}, json=None):
         params['path'] = abspath
-        params['includeFiles'] = params['includeFiles'] if 'includeFiles' in params else True
-        params['includeDirectories'] = params['includeDirectories'] if 'includeDirectories' in params else True
+        params['includeFiles'] = params.get('includeFiles', True)
+        params['includeDirectories'] = params.get('includeDirectories', True)
         return self._get("Environment/DirectoryContents", params)
 
     def scan_library(self):
