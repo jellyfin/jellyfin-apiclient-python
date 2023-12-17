@@ -115,6 +115,30 @@ class BiggerAPIMixin:
         else:
             return self._get("Users/{UserId}%s" % handler, params)
 
+    def media_folders(self, handler="", params=None, json=None):
+        return self._get("Library/MediaFolders/", params)
+
+    def virtual_folders(self, handler="", action="GET", params=None, json=None):
+        if action == "POST":
+            return self._post("Library/VirtualFolders", json, params)
+        elif action == "DELETE":
+            return self._delete("Library/VirtualFolders", params)
+        else:
+            return self._get("Library/VirtualFolders", params)
+
+    def physical_paths(self, handler="", params=None, json=None):
+        return self._get("Library/PhysicalPaths/", params)
+
+    def folder_contents(self, abspath="/", params={}, json=None):
+        params['path'] = abspath
+        params['includeFiles'] = params['includeFiles'] if 'includeFiles' in params else True
+        params['includeDirectories'] = params['includeDirectories'] if 'includeDirectories' in params else True
+        return self._get("Environment/DirectoryContents", params)
+
+    def scan_library(self):
+        return self._post("Library/Refresh")
+
+
     def items(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Items%s" % handler, json, params)
