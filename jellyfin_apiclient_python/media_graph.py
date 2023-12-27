@@ -369,7 +369,7 @@ class MediaGraph:
         rprint(f'properties = {ub.urepr(properties, nl=1)}')
         rprint(f'item = {ub.urepr(item, nl=1)}')
 
-    def find_node(self, pattern, data=False):
+    def find(self, pattern, data=False):
         graph = self.graph
         for node in graph.nodes:
             node_data = graph.nodes[node]
