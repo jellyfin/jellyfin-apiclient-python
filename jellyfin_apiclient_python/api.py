@@ -217,6 +217,30 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
+    def get_item_metadata(self, item_id):
+        """
+        Like :func:`get_item`, but returns all relevant metadata for the item.
+
+        Args:
+            item_id (str): item uuid to lookup metadata for
+        """
+        body = self.get_items([item_id])['Items'][0]
+        return body
+
+    def update_item_metadata(self, item_id, data):
+        """
+        Args:
+            item_id (str): item uuid to update metadata for
+
+            data (Dict): the new information to add to this item.
+        """
+        # Force us to get the entire original item, we need to pass
+        # all information, otherwise all info is overwritten
+        body = self.get_item_metadata(item_id)
+        body.update(data)
+        assert body['Id'] == item_id
+        return self.items('/' + item_id, action='POST', params=None, json=body)
+
     def get_sessions(self):
         return self.sessions(params={'ControllableByUserId': "{UserId}"})
 
