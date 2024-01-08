@@ -95,8 +95,10 @@ class MediaGraph:
         self.open_node(node, verbose=1)
 
     def setup(self):
-        self._init_media_folders()
-        self._update_graph_labels()
+        try:
+            self._init_media_folders()
+        finally:
+            self._update_graph_labels()
         return self
 
     def _init_media_folders(self):
