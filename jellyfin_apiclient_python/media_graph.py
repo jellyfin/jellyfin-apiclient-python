@@ -96,7 +96,7 @@ class MediaGraph:
 
     def setup(self):
         self._init_media_folders()
-        self._label_graph()
+        self._update_graph_labels()
         return self
 
     def _init_media_folders(self):
@@ -121,7 +121,9 @@ class MediaGraph:
 
         pman = progiter.ProgressManager()
         with pman:
+
             media_folders = client.jellyfin.get_media_folders(fields=['Path'])
+            items = []
             for folder in pman.progiter(media_folders['Items'], desc='Media Folders'):
                 collection_type = folder.get('CollectionType', None)
                 if include_collection_types is not None:
@@ -153,7 +155,10 @@ class MediaGraph:
                     assert item is not None
 
                 self._media_root_nodes.append(item['Id'])
+                items.append(item)
                 graph.add_node(item['Id'], item=item, properties=dict(expanded=False))
+
+            for item in pman.progiter(items, desc='Walk Media Folders'):
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
 
     def open_node(self, node, verbose=0, max_depth=1):
@@ -171,7 +176,7 @@ class MediaGraph:
         }
         with pman:
             self._walk_node(item, pman, stats, max_depth=max_depth)
-        self._label_graph(sources=[node])
+        self._update_graph_labels(sources=[node])
 
         if verbose:
             self.print_graph([node])
@@ -278,7 +283,7 @@ class MediaGraph:
                 timer.tic()
         folder_prog.stop()
 
-    def _label_graph(self, sources=None):
+    def _update_graph_labels(self, sources=None):
         """
         Update the rich text representation of select items in the graph.
         """
@@ -328,6 +333,9 @@ class MediaGraph:
             elif item['Type'] == 'Video':
                 color = None
                 type_glyph = glyphs['FILM_FRAMES']
+            elif item['Type'] == 'Movie':
+                color = None
+                type_glyph = glyphs['MOVIE_CAMERA']
             elif item['Type'] == 'Audio':
                 color = None
                 type_glyph = glyphs['BEAMED_SIXTEENTH_NOTES']
