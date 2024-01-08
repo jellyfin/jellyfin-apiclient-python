@@ -816,6 +816,8 @@ class ExperimentalAPIMixin:
 
             provider_ids (Dict):
                 maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
+                Valid keys will depend on available providers. Common ones are:
+                    "Tvdb", "Imdb", "Tvdb".
 
         References:
             https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
