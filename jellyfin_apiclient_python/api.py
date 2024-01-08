@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+For API info see:
+    https://api.jellyfin.org/
+"""
 from typing import List
 from datetime import datetime
 import requests
@@ -794,6 +798,30 @@ class SyncPlayAPIMixin:
         return self._post("SyncPlay/New", {
             "GroupName": group_name
         })
+
+
+class ExperimentalAPIMixin:
+    """
+    This is a location for testing proposed additions to the API Client.
+    """
+
+    def identify(client, item_id, provider_ids):
+        """
+        Remote search for item metadata given one or more provider id.
+
+        This method requires the user have appropriate permissions
+
+        Args:
+            item_id (str): item uuid to identify
+
+            provider_ids (Dict):
+                maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
+
+        References:
+            https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
+        """
+        body = {'ProviderIds': provider_ids}
+        return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
 
 
 class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
