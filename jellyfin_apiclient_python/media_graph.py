@@ -210,6 +210,9 @@ class MediaGraph:
             item: dict
             depth: int
 
+        from jellyfin_apiclient_python.api import info
+        fields = info()
+
         stack = [StackFrame(item, 0)]
         while stack:
             if pman is not None:
@@ -260,7 +263,7 @@ class MediaGraph:
             children = client.jellyfin.user_items(params={
                 'ParentId': parent_id,
                 'Recursive': False,
-                'fields': ['Path'],
+                'fields': fields,
             })
             if children and 'Items' in children:
                 stats['total'] += len(children['Items'])
