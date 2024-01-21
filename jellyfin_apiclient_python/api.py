@@ -209,25 +209,36 @@ class GranularAPIMixin:
         return self.users("/Items", params=params)
 
     def get_item(self, item_id):
-        return self.users("/Items/%s" % item_id)
+        """
+        Lookup metadata for an item.
+
+        Args:
+            item_id (str): item uuid to lookup metadata for
+
+        Returns:
+            Dict[str, Any]: metadata keys and values for the queried item.
+        """
+        return self.users("/Items/%s" % item_id, params={
+            'Fields': info()
+        })
 
     def get_items(self, item_ids):
+        """
+        Lookup metadata for multiple items.
+
+        Args:
+            item_ids (List[str]): item uuids to lookup metadata for
+
+        Returns:
+            Dict[str, Any]: A result dictionary where the info from each
+                item is stored in the "Items" list.
+        """
         return self.users("/Items", params={
             'Ids': ','.join(str(x) for x in item_ids),
             'Fields': info()
         })
 
-    def get_item_metadata(self, item_id):
-        """
-        Like :func:`get_item`, but returns all relevant metadata for the item.
-
-        Args:
-            item_id (str): item uuid to lookup metadata for
-        """
-        body = self.get_items([item_id])['Items'][0]
-        return body
-
-    def update_item_metadata(self, item_id, data):
+    def update_item(self, item_id, data):
         """
         Updates the metadata for an item.
 
@@ -237,13 +248,14 @@ class GranularAPIMixin:
             item_id (str): item uuid to update metadata for
 
             data (Dict): the new information to add to this item.
+                Note: any specified items are completely overwritten.
 
         References:
             .. [UpdateItem] https://api.jellyfin.org/#tag/ItemUpdate/operation/UpdateItem
         """
         # Force us to get the entire original item, we need to pass
         # all information, otherwise all info is overwritten
-        body = self.get_item_metadata(item_id)
+        body = self.get_item(item_id)
         body.update(data)
         assert body['Id'] == item_id
         return self.items('/' + item_id, action='POST', params=None, json=body)
