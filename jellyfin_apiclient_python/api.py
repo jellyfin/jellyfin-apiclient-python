@@ -229,10 +229,17 @@ class GranularAPIMixin:
 
     def update_item_metadata(self, item_id, data):
         """
+        Updates the metadata for an item.
+
+        Requires a user with elevated permissions [UpdateItem]_.
+
         Args:
             item_id (str): item uuid to update metadata for
 
             data (Dict): the new information to add to this item.
+
+        References:
+            .. [UpdateItem] https://api.jellyfin.org/#tag/ItemUpdate/operation/UpdateItem
         """
         # Force us to get the entire original item, we need to pass
         # all information, otherwise all info is overwritten
