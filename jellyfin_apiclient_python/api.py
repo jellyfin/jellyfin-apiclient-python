@@ -809,18 +809,19 @@ class ExperimentalAPIMixin:
         """
         Remote search for item metadata given one or more provider id.
 
-        This method requires the user have appropriate permissions
+        This method requires an authenticated user with elevated permissions
+        [RemoveProviderSearch]_.
 
         Args:
-            item_id (str): item uuid to identify
+            item_id (str): item uuid to identify and update metadata for.
 
             provider_ids (Dict):
                 maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
                 Valid keys will depend on available providers. Common ones are:
-                    "Tvdb", "Imdb", "Tvdb".
+                    "Tvdb" and "Imdb".
 
         References:
-            https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
+            .. [RemoveProviderSearch] https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
         """
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
