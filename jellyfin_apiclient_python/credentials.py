@@ -90,6 +90,8 @@ class Credentials(object):
 
                 if server.get('AccessToken'):
                     existing['AccessToken'] = server['AccessToken']
+
+                if server.get('UserId'):
                     existing['UserId'] = server['UserId']
 
                 if server.get('ExchangeToken'):

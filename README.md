@@ -45,6 +45,16 @@ json.loads(credentials)
 client.authenticate({"Servers": [credentials]}, discover=False)
 ```
 
+You can also authenticate using an API key, which is generated on the server.
+This is different to a device AccessToken, and is set by not configuring a
+device name, or a device id:
+
+```
+client.config.data["app.name"] = 'your_brilliant_app'
+client.config.data["app.version"] = '0.0.1'
+client.authenticate({"Servers": [{"AccessToken: <API key here>, "address": <Server Address>}]}, discover=False)
+```
+
 ### API
 
 The API is accessed via the `jellyfin` attribute of the client. Return values
@@ -83,6 +93,7 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Remove usage of `six` module.
  - Add group of `remote_` API calls to remote control another session
  - Configurable item refreshes allowing custom refresh logic (can also iterate through a list of items)
+ - Add support for authenticating via an API key
 
 ## Contributing
 

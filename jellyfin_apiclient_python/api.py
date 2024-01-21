@@ -650,7 +650,8 @@ class GranularAPIMixin:
 
     def validate_authentication_token(self, server):
         headers = self.get_default_headers()
-        headers["Authorization"] += f", Token=\"{server['AccessToken']}\""
+        comma = "," if "app.device_name" in self.config.data else ""
+        headers["Authorization"] += f"{comma} Token=\"{server['AccessToken']}\""
 
         response = self.send_request(server['address'], "system/info", headers=headers)
         return response.json() if response.status_code == 200 else {}
