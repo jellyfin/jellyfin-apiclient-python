@@ -1,0 +1,33 @@
+[build-system]
+requires = [ "setuptools>=61.0.0",]
+
+[project]
+name = "jellyfin-apiclient-python"
+authors = [
+  {name = "Ian Walton", email = "iwalton3@gmail.com"},
+]
+dynamic = ["version"]
+description = "Python API client for Jellyfin"
+readme = "README.md"
+license = {file = "LICENSE.md"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+requires-python='>=3.6'
+dependencies=[
+    'requests',
+    'urllib3',
+    'websocket_client',
+    'certifi'
+]
+
+[project.urls]
+Repository = "https://github.com/iwalton3/jellyfin-apiclient-python"
+
+[tool.setuptools]
+packages = ["jellyfin_apiclient_python"]
+
+[tool.setuptools.dynamic]
+version = {attr = "jellyfin_apiclient_python.__version__"}
