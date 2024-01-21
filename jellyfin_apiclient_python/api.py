@@ -115,10 +115,10 @@ class BiggerAPIMixin:
         else:
             return self._get("Users/{UserId}%s" % handler, params)
 
-    def media_folders(self, handler="", params=None, json=None):
+    def media_folders(self, params=None):
         return self._get("Library/MediaFolders/", params)
 
-    def virtual_folders(self, handler="", action="GET", params=None, json=None):
+    def virtual_folders(self, action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Library/VirtualFolders", json, params)
         elif action == "DELETE":
@@ -126,10 +126,11 @@ class BiggerAPIMixin:
         else:
             return self._get("Library/VirtualFolders", params)
 
-    def physical_paths(self, handler="", params=None, json=None):
+    def physical_paths(self, params=None):
         return self._get("Library/PhysicalPaths/", params)
 
-    def folder_contents(self, abspath="/", params={}, json=None):
+    def folder_contents(self, abspath="/", params=None, json=None):
+        params = {} if params is None else params.copy()
         params['path'] = abspath
         params['includeFiles'] = params.get('includeFiles', True)
         params['includeDirectories'] = params.get('includeDirectories', True)
