@@ -220,12 +220,14 @@ class HTTP(object):
                 params[key] = self._replace_user_info(value)
 
     def _get_authenication_header(self):
-        params = {
-            "Client": self.config.data['app.name'],
-            "Device": self.config.data['app.device_name'],
-            "DeviceId": self.config.data['app.device_id'],
-            "Version": self.config.data['app.version']
-            }
+        params = {}
+        if "app.device_name" in self.config.data:
+            params.update({
+                "Client": self.config.data['app.name'],
+                "Device": self.config.data['app.device_name'],
+                "DeviceId": self.config.data['app.device_id'],
+                "Version": self.config.data['app.version']
+                })
         if "auth.token" in self.config.data:
             params["Token"] = self.config.data['auth.token']
         param_line = ", ".join(f'{k}="{v}"' for k, v in params.items())

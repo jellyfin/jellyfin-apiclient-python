@@ -87,7 +87,8 @@ class ConnectionManager(object):
             except KeyError:
                 continue
 
-        servers.sort(key=itemgetter('DateLastAccessed'), reverse=True)
+        if len(servers) > 1:
+            servers.sort(key=itemgetter('DateLastAccessed'), reverse=True)
         credentials['Servers'] = servers
         self.credentials.set(credentials)
 
@@ -338,7 +339,8 @@ class ConnectionManager(object):
             if system_info:
 
                 self._update_server_info(server, system_info)
-                self.config.data['auth.user_id'] = server['UserId']
+                if "UserId" in server:
+                    self.config.data['auth.user_id'] = server['UserId']
                 self.config.data['auth.token'] = server['AccessToken']
 
                 return self._after_connect_validated(server, credentials, system_info, False, options)
