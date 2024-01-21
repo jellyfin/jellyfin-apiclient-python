@@ -8,6 +8,8 @@ from .client import JellyfinClient
 
 #################################################################################################
 
+__version__ = '1.9.2'
+
 
 class NullHandler(logging.Handler):
     def emit(self, record):
