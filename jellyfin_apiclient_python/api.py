@@ -827,7 +827,7 @@ class ExperimentalAPIMixin:
 
 
 class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
-          SyncPlayAPIMixin):
+          SyncPlayAPIMixin, ExperimentalAPIMixin):
     """
     The Jellyfin Python API client containing all api calls to the server.
 
