@@ -854,8 +854,89 @@ class ExperimentalAPIMixin:
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
 
 
+class CollectionAPIMixin:
+    """
+    Methods for creating and modifying collections.
+
+    Note: there does not seem to be an API endpoint for removing a collection.
+    """
+
+    def new_collection(self, name, item_ids=None, parent_id=None, is_locked=False):
+        """
+        Create a new collection, or search for a collection with a given name.
+
+        Args:
+            name (str):
+                Name of the collection to create or lookup
+
+            item_ids (List[str] | None):
+                List of item ids to initialize the collection with.
+
+            parent_id (str | None):
+                Create the collection within a specific folder.
+
+            is_locked (str | None):
+                Whether or not to lock the new collection.
+
+        Returns:
+            Dict:
+                with one entry: "Id", which contains the id of the new or found
+                collection.
+
+        References:
+            .. [CreateCollection] https://api.jellyfin.org/#tag/Collection/operation/CreateCollection
+        """
+        params = {}
+        params['name'] = name
+        params['isLocked'] = is_locked
+        json = {}
+        if parent_id is not None:
+            params['parentId'] = parent_id
+        if item_ids is not None:
+            params['ids'] = item_ids
+        return self._post("Collections", json, params)
+
+    def add_collection_items(self, collection_id, item_ids):
+        """
+        Adds items to a collection.
+
+        Args:
+            collection_id (str):
+                Id of the collection to add items to.
+
+            item_ids (List[str]):
+                List of item ids to add to the collection.
+
+        References:
+            .. [AddToCollection] https://api.jellyfin.org/#tag/Collection/operation/AddToCollection
+        """
+        params = {}
+        json = {}
+        params['ids'] = ','.join(item_ids)
+        return self._post(f"Collections/{collection_id}/Items", json, params)
+
+    def remove_collection_items(self, collection_id, item_ids=None):
+        """
+        Removes items from a collection.
+
+        Args:
+            collection_id (str):
+                Id of the collection to remove items from.
+
+            item_ids (List[str]):
+                List of item ids to remove from the collection.
+
+        References:
+            .. [RemoveFromCollection] https://api.jellyfin.org/#tag/Collection/operation/RemoveFromCollection
+        """
+        params = {}
+        json = {}
+        params['ids'] = ','.join(item_ids)
+        return self._delete(f"Collections/{collection_id}/Items", json, params)
+
+
 class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
-          SyncPlayAPIMixin, ExperimentalAPIMixin):
+          SyncPlayAPIMixin, ExperimentalAPIMixin, CollectionAPIMixin):
     """
     The Jellyfin Python API client containing all api calls to the server.
 
