@@ -631,19 +631,24 @@ class GranularAPIMixin:
     def get_server_time(self):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
 
-    def get_play_info(self, item_id, profile, aid=None, sid=None, start_time_ticks=None, is_playback=True):
+    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True):
         args = {
             'UserId': "{UserId}",
-            'DeviceProfile': profile,
             'AutoOpenLiveStream': is_playback,
             'IsPlayback': is_playback
         }
+        if profile is None:
+            args['DeviceProfile'] = profile
         if sid:
             args['SubtitleStreamIndex'] = sid
         if aid:
             args['AudioStreamIndex'] = aid
         if start_time_ticks:
             args['StartTimeTicks'] = start_time_ticks
+        # TODO:
+        # Should this be a get?
+        # https://api.jellyfin.org/#tag/MediaInfo
+        # https://api.jellyfin.org/#tag/MediaInfo/operation/GetPostedPlaybackInfo
         return self.items("/%s/PlaybackInfo" % item_id, "POST", json=args)
 
     def get_live_stream(self, item_id, play_id, token, profile):
@@ -895,6 +900,123 @@ class ExperimentalAPIMixin:
         """
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+
+    def get_now_playing(self, session_id):
+        """
+        Simplified API to get now playing information for a session including the
+        play state.
+
+        References:
+            https://github.com/jellyfin/jellyfin/issues/9665
+        """
+        resp = self.sessions(params={
+            'Id': session_id,
+            'fields': ['PlayState']
+        })
+        found = None
+        for item in resp:
+            if item['Id'] == session_id:
+                found = item
+        if not found:
+            raise KeyError(f'No session_id={session_id}')
+        play_state = found['PlayState']
+        now_playing = found['NowPlayingItem']
+        now_playing['PlayState'] = play_state
+        return now_playing
+
+    def identify(client, item_id, provider_ids):
+        """
+        Remote search for item metadata given one or more provider id.
+
+        This method requires the user have appropriate permissions
+
+        Args:
+            item_id (str): item uuid to identify
+
+            provider_ids (Dict):
+                maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
+
+        References:
+            https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
+        """
+        body = {'ProviderIds': provider_ids}
+        return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+
+
+class CollectionAPIMixin:
+
+    def new_collection(self, name, item_ids=None, parent_id=None, is_locked=False):
+        """
+        Create a new collection, or search for a collection with a given name.
+
+        Args:
+            name (str):
+                Name of the collection to create or lookup
+
+            item_ids (List[str] | None):
+                List of item ids to initialize the collection with.
+
+            parent_id (str | None):
+                Create the collection within a specific folder.
+
+            is_locked (str | None):
+                Whether or not to lock the new collection.
+
+        Returns:
+            Dict:
+                with one entry: "Id", which contains the id of the new or found
+                collection.
+
+        References:
+            .. [CreateCollection] https://api.jellyfin.org/#tag/Collection/operation/CreateCollection
+        """
+        params = {}
+        params['name'] = name
+        params['isLocked'] = is_locked
+        json = {}
+        if parent_id is not None:
+            params['parentId'] = parent_id
+        if item_ids is not None:
+            params['ids'] = item_ids
+        return self._post("Collections", json, params)
+
+    def add_collection_items(self, collection_id, item_ids):
+        """
+        Adds items to a collection.
+
+        Args:
+            collection_id (str):
+                Id of the collection to add items to.
+
+            item_ids (List[str]):
+                List of item ids to add to the collection.
+
+        References:
+            .. [AddToCollection] https://api.jellyfin.org/#tag/Collection/operation/AddToCollection
+        """
+        params = {}
+        json = {}
+        params['ids'] = ','.join(item_ids)
+        return self._post(f"Collections/{collection_id}/Items", json, params)
+
+    def remove_collection_items(self, collection_id, item_ids=None):
+        """
+        Removes items from a collection.
+
+        Args:
+            collection_id (str):
+                Id of the collection to remove items from.
+
+            item_ids (List[str]):
+                List of item ids to remove from the collection.
+
+        References:
+            .. [RemoveFromCollection] https://api.jellyfin.org/#tag/Collection/operation/RemoveFromCollection
+        """
+        params = {}
+        json = {}
+        params['ids'] = ','.join(item_ids)
+        return self._delete(f"Collections/{collection_id}/Items", json, params)
 
 
 class CollectionAPIMixin:
