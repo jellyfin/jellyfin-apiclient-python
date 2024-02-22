@@ -52,7 +52,7 @@ device name, or a device id:
 ```
 client.config.data["app.name"] = 'your_brilliant_app'
 client.config.data["app.version"] = '0.0.1'
-client.authenticate({"Servers": [{"AccessToken: <API key here>, "address": <Server Address>}]}, discover=False)
+client.authenticate({"Servers": [{"AccessToken": <API key here>, "address": <Server Address>}]}, discover=False)
 ```
 
 ### API
