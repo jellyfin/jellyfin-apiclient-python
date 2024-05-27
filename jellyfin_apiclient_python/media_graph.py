@@ -7,15 +7,21 @@ import progiter
 
 class MediaGraph:
     """
+    Builds a graph of all media items in a jellyfin database.
+
+    Maintains an in-memory graph of the jellyfin database state. This allows
+    for efficient client-side queries and exploration, but does take some time
+    to construct, and is not kept in sync with the server in the case of
+    server-side changes.
 
     Example:
-        from jellyfin_apiclient_python.media_graph import *  # NOQA
-        client = MediaGraph.demo_client()
-        self = MediaGraph(client)
-        self.walk_config['initial_depth'] = None
-        self.setup()
-        self.tree()
-
+        >>> from jellyfin_apiclient_python.media_graph import MediaGraph
+        >>> MediaGraph.ensure_demo_server()
+        >>> client = MediaGraph.demo_client()
+        >>> self = MediaGraph(client)
+        >>> self.walk_config['initial_depth'] = None
+        >>> self.setup()
+        >>> self.tree()
 
     Ignore:
         self = MediaGraph(client).setup()
@@ -52,6 +58,83 @@ class MediaGraph:
         self._media_root_nodes = None
 
     @classmethod
+    def ensure_demo_server(cls):
+        """
+        We want to ensure we have a demo server to play with.  We can do this
+        with a docker image.
+
+        Requires docker.
+
+        References:
+            https://jellyfin.org/docs/general/installation/container#docker
+            https://commons.wikimedia.org/wiki/Category:Audio_files
+        """
+        import ubelt as ub
+        oci_exe = ub.find_exe('docker')
+        if not oci_exe:
+            oci_exe = ub.find_exe('podman')
+        if oci_exe is None:
+            raise Exception('Docker / podman is required')
+
+        oci_container_name = 'jellyfin-apiclient-python-test-server'
+        info = ub.cmd(f'{oci_exe} ps', verbose=3)
+        if oci_container_name not in info.stdout:
+
+            ub.cmd(f'{oci_exe} pull jellyfin/jellyfin', check=True)
+
+            test_dpath = ub.Path.appdir('jellyfin-apiclient-python/tests')
+            cache_dpath = (test_dpath / 'cache').ensuredir()
+            config_dpath = (test_dpath / 'config').ensuredir()
+            media_dpath = (test_dpath / 'media').ensuredir()
+            movies_dpath = (media_dpath / 'movies').ensuredir()
+            music_dpath = (media_dpath / 'music').ensuredir()
+
+            zip_fpath = ub.grabdata('https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip',
+                                    dpath=movies_dpath,
+                                    hash_prefix='e320fef389ec749117d0c1583945039266a40f25483881c2ff0d33207e62b362',
+                                    hasher='sha256')
+            mp4_fpath = ub.Path(zip_fpath).augment(ext='')
+            if not mp4_fpath.exists():
+                import zipfile
+                zfile = zipfile.ZipFile(zip_fpath)
+                zfile.extractall(path=media_dpath)
+
+            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/e/e1/Heart_Monitor_Beep--freesound.org.mp3', dpath=music_dpath)
+            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3')
+
+            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/7/73/Schoenberg_-_Drei_Klavierst%C3%BCcke_No._1_-_Irakly_Avaliani.webm', dpath=music_dpath)
+            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3', dpath=music_dpath)
+
+            ub.cmd(f'{oci_exe} ps {oci_container_name}', verbose=3)
+            ub.cmd(f'{oci_exe} stop {oci_container_name}', verbose=3)
+            test_port = '8097'
+            docker_args = [
+                'docker', 'run',
+                '--rm=true',
+                '--detach=true',
+                '--name', oci_container_name,
+                '--publish', f'{test_port}:8096/tcp',
+                # '--user', 'uid:gid',
+                '--volume', f'{cache_dpath}:/cache',
+                '--volume', f'{config_dpath}:/config',
+                '--mount', f'type=bind,source={media_dpath},target=/media',
+                # '--restart', 'unless-stopped',
+                '--restart', 'no',
+                'jellyfin/jellyfin',
+            ]
+            ub.cmd(docker_args, verbose=3)
+            _ = ub.cmd(f'{oci_exe} ps', verbose=3)
+
+            # TODO: Programatically create user with name "jellyfin" and
+            # password "jellyfin"
+            # TODO: Programatically add /media/movies as a Library.
+            # TODO: Find demo data for /media/music
+            # TODO: Find demo data for /media/audiobooks
+            # TODO: Find demo data for /media/shows
+            # TODO: Find demo data for /media/movies
+            # TODO: Find demo data for /media/images
+
+    @classmethod
     def demo_client(cls):
         # TODO: Ensure test environment can spin up a dummy jellyfin server.
         from jellyfin_apiclient_python import JellyfinClient
@@ -62,9 +145,10 @@ class MediaGraph:
             device_name='machine_name',
             device_id='unique_id')
         client.config.data["auth.ssl"] = True
-        url = 'http://192.168.222.38:8096'
+        # url = 'http://192.168.222.38:8096'
+        url = 'http://127.0.0.1:8097'
         username = 'jellyfin'
-        password = ''
+        password = 'jellyfin'
         client.auth.connect_to_address(url)
         client.auth.login(url, username, password)
         return client

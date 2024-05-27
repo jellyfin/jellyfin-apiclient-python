@@ -182,6 +182,12 @@ class BiggerAPIMixin:
             return self._get("Items%s" % handler, params)
 
     def user_items(self, handler="", params=None):
+        """
+        Calls the /Users/{userId}/Items endpoint [GetItemsByUserId]_.
+
+        References:
+            .. [GetItemsByUserId] https://api.jellyfin.org/#tag/Items/operation/GetItemsByUserId
+        """
         return self.users("/Items%s" % handler, params=params)
 
     def shows(self, handler, params):
@@ -986,6 +992,24 @@ class ExperimentalAPIMixin:
         """
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+
+    # def identify(client, item_id, provider_ids):
+    #     """
+    #     Remote search for item metadata given one or more provider id.
+
+    #     This method requires the user have appropriate permissions
+
+    #     Args:
+    #         item_id (str): item uuid to identify
+
+    #         provider_ids (Dict):
+    #             maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
+
+    #     References:
+    #         https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
+    #     """
+    #     body = {'ProviderIds': provider_ids}
+    #     return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
 
     def get_now_playing(self, session_id):
         """
