@@ -619,8 +619,11 @@ class GranularAPIMixin:
     def remote_unmute(self, id):
         return self.command(id, "Unmute")
 
-    def item_played(self, item_id, watched):
-        return self.users("/PlayedItems/%s" % item_id, "POST" if watched else "DELETE")
+    def item_played(self, item_id, watched, date=None):
+        params = {}
+        if watched and date is not None:
+            params["datePlayed"] = date
+        return self.users("/PlayedItems/%s" % item_id, "POST" if watched else "DELETE", params=params)
 
     def get_sync_queue(self, date, filters=None):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/{UserId}/GetItems", params={
