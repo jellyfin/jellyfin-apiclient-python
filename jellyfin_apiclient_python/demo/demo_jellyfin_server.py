@@ -43,6 +43,11 @@ class DemoJellyfinServerManager():
         # config_dpath = (test_dpath / 'config').ensuredir()
 
     def ensure_server(self, reset=False):
+        """
+        Main entry point that will quickly check if a server exists, and if it
+        does not it will set up a small one for testing purposes. By passing
+        reset=True you can delete an existing server and force a fresh start.
+        """
         if reset:
             self.teardown_existing_server()
 
@@ -52,9 +57,12 @@ class DemoJellyfinServerManager():
             self.populate_demo_media()
 
     def server_exists(self):
-        oci_container_name = 'jellyfin-apiclient-python-test-server'
+        """
+        Returns:
+            bool: True there is a container running the jellyfin server
+        """
         info = ub.cmd(f'{self.oci_exe} ps', verbose=self.verbose)
-        return oci_container_name in info.stdout
+        return self.oci_container_name in info.stdout
 
     def teardown_existing_server(self):
         """
@@ -164,6 +172,10 @@ class DemoJellyfinServerManager():
         ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3', dpath=music_dpath)
 
     def populate_demo_media(self):
+        """
+        Sends API calls to the server to add the demo media to the jellyfin
+        database.
+        """
         # Create a client to perform some initial configuration.
         from jellyfin_apiclient_python import JellyfinClient
         client = JellyfinClient()
