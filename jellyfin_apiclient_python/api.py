@@ -160,7 +160,7 @@ class BiggerAPIMixin:
                 paths on the server to use in the media library
 
         References:
-            ..[AddVirtualFolder] https://api.jellyfin.org/#tag/LibraryStructure/operation/AddVirtualFolder
+            .. [AddVirtualFolder] https://api.jellyfin.org/#tag/LibraryStructure/operation/AddVirtualFolder
         """
         params = {
             'name': name,
