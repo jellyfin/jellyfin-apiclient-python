@@ -16,7 +16,7 @@ class MediaGraph:
 
     Example:
         >>> from jellyfin_apiclient_python.media_graph import MediaGraph
-        >>> MediaGraph.ensure_demo_server()
+        >>> MediaGraph.ensure_demo_server(reset=0)
         >>> client = MediaGraph.demo_client()
         >>> self = MediaGraph(client)
         >>> self.walk_config['initial_depth'] = None
