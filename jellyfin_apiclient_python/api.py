@@ -923,7 +923,10 @@ class ExperimentalAPIMixin:
         if not found:
             raise KeyError(f'No session_id={session_id}')
         play_state = found['PlayState']
-        now_playing = found['NowPlayingItem']
+        now_playing = found.get('NowPlayingItem', None)
+        if now_playing is None:
+            # handle case if nothing is playing
+            now_playing = {'Name': None}
         now_playing['PlayState'] = play_state
         return now_playing
 
