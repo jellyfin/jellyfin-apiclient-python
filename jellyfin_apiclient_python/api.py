@@ -146,6 +146,31 @@ class BiggerAPIMixin:
         """
         return self._post("Library/Refresh")
 
+    def add_media_library(self, name, collectionType, paths, refreshLibrary=True):
+        """
+        Create a new media library.
+
+        Args:
+            name (str): name of the new library
+
+            collectionType (str): one of "movies" "tvshows" "music" "musicvideos"
+                "homevideos" "boxsets" "books" "mixed"
+
+            paths (List[str]):
+                paths on the server to use in the media library
+
+        References:
+            ..[AddVirtualFolder] https://api.jellyfin.org/#tag/LibraryStructure/operation/AddVirtualFolder
+        """
+        params = {
+            'name': name,
+            'collectionType': collectionType,
+            'paths': paths,
+            'refreshLibrary': refreshLibrary,
+
+        }
+        return self.virtual_folders('POST', params=params)
+
     def items(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Items%s" % handler, json, params)
