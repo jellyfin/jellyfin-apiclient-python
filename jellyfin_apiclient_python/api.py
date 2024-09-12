@@ -547,6 +547,34 @@ class GranularAPIMixin:
     def get_system_info(self):
         return self._get("System/Configuration")
 
+    def get_server_logs(self):
+        """
+        Returns:
+            List[Dict] - list of information about available log files
+
+        References:
+            .. [GetServerLogs] https://api.jellyfin.org/#tag/System/operation/GetServerLogs
+        """
+        return self._get("System/Logs")
+
+    def get_log_entries(self, startIndex=None, limit=None, minDate=None, hasUserId=None):
+        """
+        Returns a list of recent log entries
+
+        Returns:
+            Dict: with main key "Items"
+        """
+        params = {}
+        if limit is not None:
+            params['limit'] = limit
+        if startIndex is not None:
+            params['startIndex'] = startIndex
+        if minDate is not None:
+            params['minDate'] = minDate
+        if hasUserId is not None:
+            params['hasUserId'] = hasUserId
+        return self._get("System/ActivityLog/Entries", params=params)
+
     def post_capabilities(self, data):
         return self.sessions("/Capabilities/Full", "POST", json=data)
 
