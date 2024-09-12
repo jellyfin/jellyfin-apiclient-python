@@ -58,7 +58,7 @@ class MediaGraph:
         self._media_root_nodes = None
 
     @classmethod
-    def ensure_demo_server(cls):
+    def ensure_demo_server(cls, reset=False):
         """
         We want to ensure we have a demo server to play with.  We can do this
         with a docker image.
@@ -78,35 +78,34 @@ class MediaGraph:
 
         oci_container_name = 'jellyfin-apiclient-python-test-server'
         info = ub.cmd(f'{oci_exe} ps', verbose=3)
-        if oci_container_name not in info.stdout:
-
+        if reset or oci_container_name not in info.stdout:
             ub.cmd(f'{oci_exe} pull jellyfin/jellyfin', check=True)
-
-            test_dpath = ub.Path.appdir('jellyfin-apiclient-python/tests')
-            cache_dpath = (test_dpath / 'cache').ensuredir()
-            config_dpath = (test_dpath / 'config').ensuredir()
+            test_dpath = ub.Path.appdir('jellyfin-apiclient-python/demo/demo_server')
+            # cache_dpath = (test_dpath / 'cache').ensuredir()
+            # config_dpath = (test_dpath / 'config').ensuredir()
             media_dpath = (test_dpath / 'media').ensuredir()
             movies_dpath = (media_dpath / 'movies').ensuredir()
             music_dpath = (media_dpath / 'music').ensuredir()
 
-            zip_fpath = ub.grabdata('https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip',
-                                    dpath=movies_dpath,
-                                    hash_prefix='e320fef389ec749117d0c1583945039266a40f25483881c2ff0d33207e62b362',
-                                    hasher='sha256')
-            mp4_fpath = ub.Path(zip_fpath).augment(ext='')
-            if not mp4_fpath.exists():
-                import zipfile
-                zfile = zipfile.ZipFile(zip_fpath)
-                zfile.extractall(path=media_dpath)
+            # TODO: fix bbb
+            # zip_fpath = ub.grabdata('https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip',
+            #                         dpath=movies_dpath,
+            #                         hash_prefix='e320fef389ec749117d0c1583945039266a40f25483881c2ff0d33207e62b362',
+            #                         hasher='sha256')
+            # mp4_fpath = ub.Path(zip_fpath).augment(ext='')
+            # if not mp4_fpath.exists():
+            #     import zipfile
+            #     zfile = zipfile.ZipFile(zip_fpath)
+            #     zfile.extractall(path=media_dpath)
 
+            ub.grabdata('https://commons.wikimedia.org/wiki/File:Zur%C3%BCck_in_die_Zukunft_(Film)_01.ogg', dpath=movies_dpath)
             ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/e/e1/Heart_Monitor_Beep--freesound.org.mp3', dpath=music_dpath)
-            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3')
-
+            ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3', dpath=music_dpath)
             ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/7/73/Schoenberg_-_Drei_Klavierst%C3%BCcke_No._1_-_Irakly_Avaliani.webm', dpath=music_dpath)
             ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3', dpath=music_dpath)
 
-            ub.cmd(f'{oci_exe} ps {oci_container_name}', verbose=3)
             ub.cmd(f'{oci_exe} stop {oci_container_name}', verbose=3)
+            ub.cmd(f'{oci_exe} rm {oci_container_name}', verbose=3)
             test_port = '8097'
             docker_args = [
                 'docker', 'run',
@@ -115,24 +114,83 @@ class MediaGraph:
                 '--name', oci_container_name,
                 '--publish', f'{test_port}:8096/tcp',
                 # '--user', 'uid:gid',
-                '--volume', f'{cache_dpath}:/cache',
-                '--volume', f'{config_dpath}:/config',
+                # Dont mount these so we start with a fresh database on docker
+                # restart
+                # '--volume', f'{cache_dpath}:/cache',
+                # '--volume', f'{config_dpath}:/config',
                 '--mount', f'type=bind,source={media_dpath},target=/media',
                 # '--restart', 'unless-stopped',
                 '--restart', 'no',
                 'jellyfin/jellyfin',
             ]
-            ub.cmd(docker_args, verbose=3)
-            _ = ub.cmd(f'{oci_exe} ps', verbose=3)
+            ub.cmd(docker_args, verbose=3, check=True)
 
-            # TODO: Programatically create user with name "jellyfin" and
-            # password "jellyfin"
-            # TODO: Programatically add /media/movies as a Library.
-            # TODO: Find demo data for /media/music
-            # TODO: Find demo data for /media/audiobooks
-            # TODO: Find demo data for /media/shows
-            # TODO: Find demo data for /media/movies
-            # TODO: Find demo data for /media/images
+            info = ub.cmd(f'{oci_exe} ps', verbose=3)
+            import time
+            while 'starting' in info.stdout:
+                time.sleep(3)
+                info = ub.cmd(f'{oci_exe} ps', verbose=3)
+
+            # Programatically initialize the new server with a user with name
+            # "jellyfin" and password "jellyfin". This process was discovered
+            # by looking at what the webUI does, and isn't part of the core
+            # jellyfin API, so it may break in the future.
+
+            # References:
+            # https://matrix.to/#/!YOoxJKhsHoXZiIHyBG:matrix.org/$H4ymY6TE0mtkVEaaxQDNosjLN7xXE__U_gy3u-FGPas?via=bonifacelabs.ca&via=t2bot.io&via=matrix.org
+            import requests
+            time.sleep(1)
+
+            resp = requests.post('http://localhost:8097/Startup/Configuration', json={"UICulture": "en-US", "MetadataCountryCode": "US", "PreferredMetadataLanguage": "en"})
+            assert resp.ok
+            time.sleep(1)
+
+            resp = requests.get('http://localhost:8097/Startup/User')
+            assert resp.ok
+            time.sleep(1)
+
+            resp = requests.post('http://localhost:8097/Startup/User', json={"Name": "jellyfin", "Password": "jellyfin"})
+            assert resp.ok
+            time.sleep(1)
+
+            payload = {"UICulture": "en-US", "MetadataCountryCode": "US", "PreferredMetadataLanguage": "en"}
+            resp = requests.post('http://localhost:8097/Startup/Configuration', json=payload)
+            assert resp.ok
+            time.sleep(1)
+
+            payload = {"EnableRemoteAccess": True, "EnableAutomaticPortMapping": False}
+            resp = requests.post('http://localhost:8097/Startup/RemoteAccess', json=payload)
+            assert resp.ok
+            time.sleep(1)
+
+            resp = requests.post('http://localhost:8097/Startup/Complete')
+            assert resp.ok
+            time.sleep(1)
+
+            # Create a client to perform some initial configuration.
+            from jellyfin_apiclient_python import JellyfinClient
+            client = JellyfinClient()
+            client.config.app(
+                name='DemoApp',
+                version='0.0.1',
+                device_name='machine_name',
+                device_id='unique_id')
+            client.config.data["auth.ssl"] = True
+            # url = 'http://192.168.222.38:8096'
+            url = 'http://127.0.0.1:8097'
+            username = 'jellyfin'
+            password = 'jellyfin'
+            client.auth.connect_to_address(url)
+            client.auth.login(url, username, password)
+
+            client.jellyfin.add_media_library(
+                name='Movies', collectionType='movies',
+                paths=['/media/movies'], refreshLibrary=True,
+            )
+            client.jellyfin.add_media_library(
+                name='Music', collectionType='music',
+                paths=['/media/music'], refreshLibrary=True,
+            )
 
     @classmethod
     def demo_client(cls):
