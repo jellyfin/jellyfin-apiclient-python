@@ -180,6 +180,12 @@ class BiggerAPIMixin:
             return self._get("Items%s" % handler, params)
 
     def user_items(self, handler="", params=None):
+        """
+        Calls the /Users/{userId}/Items endpoint [GetItemsByUserId]_.
+
+        References:
+            .. [GetItemsByUserId] https://api.jellyfin.org/#tag/Items/operation/GetItemsByUserId
+        """
         return self.users("/Items%s" % handler, params=params)
 
     def shows(self, handler, params):
