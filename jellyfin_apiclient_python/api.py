@@ -508,6 +508,29 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
+    def get_userdata_for_item(self, item_id):
+        return self._get(
+            f"UserItems/{item_id}/UserData", params={"UserId": "{UserId}"}
+        )
+
+    def update_userdata_for_item(self, item_id, data):
+        """
+        Updates the userdata for an item.
+
+        Args:
+            item_id (str): item uuid to update userdata for
+
+            data (dict): the information to add to the current user's 
+                userdata for the item. Any fields in data overwrite the
+                equivalent fields in UserData, other UserData fields are
+                left untouched.
+
+        References:
+            .. [UpdateItemUserData] https://api.jellyfin.org/#tag/Items/operation/UpdateItemUserData
+        """        
+        return self._post(f"UserItems/{item_id}/UserData", params={"UserId": "{UserId}"}, json=data)
+
+
     def refresh_item(self, item_id, recursive=True, image_refresh='FullRefresh', metadata_refresh='FullRefresh', replace_images=False, replace_metadata=True, preset=None):
         """
         Description:
