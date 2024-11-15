@@ -13,7 +13,8 @@ LOG = logging.getLogger('JELLYFIN.' + __name__)
 
 
 def jellyfin_url(client, handler):
-    return "%s/%s" % (client.config.data['auth.server'], handler)
+    base_url = client.config.data['auth.server'].rstrip('/')
+    return f"{base_url}/{handler.lstrip('/')}"
 
 
 def basic_info():
@@ -145,6 +146,31 @@ class BiggerAPIMixin:
         Starts a library scan.
         """
         return self._post("Library/Refresh")
+
+    def add_media_library(self, name, collectionType, paths, refreshLibrary=True):
+        """
+        Create a new media library.
+
+        Args:
+            name (str): name of the new library
+
+            collectionType (str): one of "movies" "tvshows" "music" "musicvideos"
+                "homevideos" "boxsets" "books" "mixed"
+
+            paths (List[str]):
+                paths on the server to use in the media library
+
+        References:
+            .. [AddVirtualFolder] https://api.jellyfin.org/#tag/LibraryStructure/operation/AddVirtualFolder
+        """
+        params = {
+            'name': name,
+            'collectionType': collectionType,
+            'paths': paths,
+            'refreshLibrary': refreshLibrary,
+
+        }
+        return self.virtual_folders('POST', params=params)
 
     def items(self, handler="", action="GET", params=None, json=None):
         if action == "POST":
@@ -547,6 +573,34 @@ class GranularAPIMixin:
     def get_system_info(self):
         return self._get("System/Configuration")
 
+    def get_server_logs(self):
+        """
+        Returns:
+            List[Dict] - list of information about available log files
+
+        References:
+            .. [GetServerLogs] https://api.jellyfin.org/#tag/System/operation/GetServerLogs
+        """
+        return self._get("System/Logs")
+
+    def get_log_entries(self, startIndex=None, limit=None, minDate=None, hasUserId=None):
+        """
+        Returns a list of recent log entries
+
+        Returns:
+            Dict: with main key "Items"
+        """
+        params = {}
+        if limit is not None:
+            params['limit'] = limit
+        if startIndex is not None:
+            params['startIndex'] = startIndex
+        if minDate is not None:
+            params['minDate'] = minDate
+        if hasUserId is not None:
+            params['hasUserId'] = hasUserId
+        return self._get("System/ActivityLog/Entries", params=params)
+
     def post_capabilities(self, data):
         return self.sessions("/Capabilities/Full", "POST", json=data)
 
@@ -634,19 +688,24 @@ class GranularAPIMixin:
     def get_server_time(self):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
 
-    def get_play_info(self, item_id, profile, aid=None, sid=None, start_time_ticks=None, is_playback=True):
+    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True):
         args = {
             'UserId': "{UserId}",
-            'DeviceProfile': profile,
             'AutoOpenLiveStream': is_playback,
             'IsPlayback': is_playback
         }
+        if profile is None:
+            args['DeviceProfile'] = profile
         if sid:
             args['SubtitleStreamIndex'] = sid
         if aid:
             args['AudioStreamIndex'] = aid
         if start_time_ticks:
             args['StartTimeTicks'] = start_time_ticks
+        # TODO:
+        # Should this be a get?
+        # https://api.jellyfin.org/#tag/MediaInfo
+        # https://api.jellyfin.org/#tag/MediaInfo/operation/GetPostedPlaybackInfo
         return self.items("/%s/PlaybackInfo" % item_id, "POST", json=args)
 
     def get_live_stream(self, item_id, play_id, token, profile):
@@ -898,6 +957,32 @@ class ExperimentalAPIMixin:
         """
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+
+    def get_now_playing(self, session_id):
+        """
+        Simplified API to get now playing information for a session including the
+        play state.
+
+        References:
+            https://github.com/jellyfin/jellyfin/issues/9665
+        """
+        resp = self.sessions(params={
+            'Id': session_id,
+            'fields': ['PlayState']
+        })
+        found = None
+        for item in resp:
+            if item['Id'] == session_id:
+                found = item
+        if not found:
+            raise KeyError(f'No session_id={session_id}')
+        play_state = found['PlayState']
+        now_playing = found.get('NowPlayingItem', None)
+        if now_playing is None:
+            # handle case if nothing is playing
+            now_playing = {'Name': None}
+        now_playing['PlayState'] = play_state
+        return now_playing
 
 
 class CollectionAPIMixin:
