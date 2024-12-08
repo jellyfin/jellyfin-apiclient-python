@@ -56,6 +56,16 @@ class WSClient(threading.Thread):
 
         LOG.info("Websocket url: %s", wsc_url)
 
+        # Configure SSL context for client authentication
+        ssl_context = None
+        if self.client.config.data['auth.tls_client_cert'] and self.client.config.data['auth.tls_client_key']:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ssl_context.load_default_certs()
+            ssl_context.load_cert_chain(self.client.config.data['auth.tls_client_cert'], self.client.config.data['auth.tls_client_key'])
+            
+            if self.client.config.data['auth.tls_server_ca']:
+                ssl_context.load_verify_locations(self.client.config.data['auth.tls_server_ca'])
+
         self.wsc = websocket.WebSocketApp(wsc_url,
                                           on_message=lambda ws, message: self.on_message(ws, message),
                                           on_error=lambda ws, error: self.on_error(ws, error))
@@ -74,7 +84,7 @@ class WSClient(threading.Thread):
                         ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
                     )
                 else:
-                    self.wsc.run_forever(ping_interval=10, sslopt={"ca_certs": certifi.where()})
+                    self.wsc.run_forever(ping_interval=10, sslopt={"context": ssl_context, "ca_certs": certifi.where()})
             else:
                 self.wsc.run_forever(ping_interval=10)
 

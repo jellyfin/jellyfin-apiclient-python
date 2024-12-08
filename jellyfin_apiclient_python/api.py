@@ -758,7 +758,7 @@ class GranularAPIMixin:
 
         return request_method(url, **request_settings)
 
-    def login(self, server_url, username, password=""):
+    def login(self, server_url, username, password="", session=None):
         path = "Users/AuthenticateByName"
         authData = {
                     "username": username,
@@ -771,7 +771,7 @@ class GranularAPIMixin:
         try:
             LOG.info("Trying to login to %s/%s as %s" % (server_url, path, username))
             response = self.send_request(server_url, path, method="post", headers=headers,
-                                         data=json.dumps(authData), timeout=(5, 30))
+                                         data=json.dumps(authData), timeout=(5, 30), session=session)
 
             if response.status_code == 200:
                 return response.json()
@@ -786,23 +786,23 @@ class GranularAPIMixin:
 
         return {}
 
-    def validate_authentication_token(self, server):
+    def validate_authentication_token(self, server, session=None):
         headers = self.get_default_headers()
         comma = "," if "app.device_name" in self.config.data else ""
         headers["Authorization"] += f"{comma} Token=\"{server['AccessToken']}\""
 
-        response = self.send_request(server['address'], "system/info", headers=headers)
+        response = self.send_request(server['address'], "system/info", headers=headers, session=session)
         return response.json() if response.status_code == 200 else {}
 
-    def get_public_info(self, server_address):
-        response = self.send_request(server_address, "system/info/public")
+    def get_public_info(self, server_address, session=None):
+        response = self.send_request(server_address, "system/info/public", session=session)
         return response.json() if response.status_code == 200 else {}
 
-    def check_redirect(self, server_address):
+    def check_redirect(self, server_address, session=None):
         ''' Checks if the server is redirecting traffic to a new URL and
         returns the URL the server prefers to use
         '''
-        response = self.send_request(server_address, "system/info/public")
+        response = self.send_request(server_address, "system/info/public", session=session)
         url = response.url.replace('/system/info/public', '')
         return url
 
