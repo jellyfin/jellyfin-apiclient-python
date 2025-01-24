@@ -165,7 +165,10 @@ class DemoJellyfinServerManager():
         #     zfile = zipfile.ZipFile(zip_fpath)
         #     zfile.extractall(path=media_dpath)
 
-        ub.grabdata('https://commons.wikimedia.org/wiki/File:Zur%C3%BCck_in_die_Zukunft_(Film)_01.ogg', dpath=movies_dpath)
+        ub.grabdata('https://tile.loc.gov/storage-services/service/mbrs/ntscrm/00068306/00068306.mp4', fname='Popeye the Sailor meets Sinbad the Sailor.mp4', dpath=movies_dpath)
+        ub.grabdata('https://tile.loc.gov/storage-services/service/mbrs/ntscrm/00000765/00000765.mp4', fname='The great train robbery.mp4', dpath=movies_dpath)
+
+        ub.grabdata('https://commons.wikimedia.org/wiki/File:Zur%C3%BCck_in_die_Zukunft_(Film)_01.ogg', fname='Zurück in die Zukunft.ogg', dpath=music_dpath)
         ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/e/e1/Heart_Monitor_Beep--freesound.org.mp3', dpath=music_dpath)
         ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3', dpath=music_dpath)
         ub.grabdata('https://upload.wikimedia.org/wikipedia/commons/7/73/Schoenberg_-_Drei_Klavierst%C3%BCcke_No._1_-_Irakly_Avaliani.webm', dpath=music_dpath)
