@@ -7,7 +7,11 @@ import progiter
 
 class MediaGraph:
     """
-    Builds a graph of all media items in a jellyfin database.
+    Wraps a Jellyfin API client with an interface to walk media folders.
+
+    Builds a graph of all media items in a jellyfin database. A current working
+    directory pointer is maintained to allow filesystem like navigation of the
+    database.
 
     Maintains an in-memory graph of the jellyfin database state. This allows
     for efficient client-side queries and exploration, but does take some time
@@ -16,31 +20,74 @@ class MediaGraph:
 
     Example:
         >>> from jellyfin_apiclient_python.media_graph import MediaGraph
+        >>> import ubelt as ub
+        >>> # Given an API client
         >>> MediaGraph.ensure_demo_server(reset=0)
         >>> client = MediaGraph.demo_client()
+        >>> # Create the media graph by passing it the client
         >>> self = MediaGraph(client)
         >>> self.walk_config['initial_depth'] = None
         >>> self.setup()
+        ...
+        >>> # Print the graph at the top level
         >>> self.tree()
-
-    Ignore:
-        self = MediaGraph(client).setup()
-        self.tree()
-
-        node = self.ls()[0]
-        self.cd(node)
-        self.tree()
-        self.print_item(node)
-
-        self.cd(self.ls()[3])
-        self.tree()
-        self.cd(self.ls()[0])
-        self.tree()
-        self.print_item(self.ls()[0])
-
-        self.cd(None)
-        self.ls()
-        self.print_graph()
+        ╟──  f137a2dd21bbc1b99aa5c0f6bf02a805 : 📂 CollectionFolder - Movies
+        ╎   ├─╼  826931c9344d013db9db13341db65cce : 🎥 Movie - The great train robbery
+        ╎   ├─╼  6144770939e7eeef8d9bd4eb519bf770 : 🎥 Movie - Popeye the Sailor meets Sinbad the Sailor
+        ╎   ├─╼  0a8c358081cc4bf1eb74a660ca8616f4 : 🎥 Movie - File:Zur%C3%BCck_in_die_Zukunft_(Film)_01
+        ╎   └─╼  32a52b6711776ffeb09b0e737aab5558 : 🎥 Movie - Popeye the Sailor meets Sinbad the Sailor
+        ╟──  7e64e319657a9516ec78490da03edccb : 📂 CollectionFolder - Music
+        ╎   ├─╼  8288fbf650ae583fc36d715b2c82dff5 : ♬ Audio - Zurück in die Zukunft
+        ╎   ├─╼  76ed290f795e4a24a9cceba4aa8bfb33 : ♬ Audio - Heart_Monitor_Beep--freesound.org
+        ╎   └─╼  7a7f9d14d80062884dbefd156818b339 : ♬ Audio - Clair De Lune
+        ╙──  1071671e7bffa0532e930debee501d2e : 📂 ManualPlaylistsFolder - Playlists
+        >>> # Search for items based on name
+        >>> found = list(self.find('the'))
+        >>> print(f'found = {ub.urepr(found, nl=1)}')
+        found = [
+            '6144770939e7eeef8d9bd4eb519bf770',
+            '32a52b6711776ffeb09b0e737aab5558',
+        ]
+        >>> # List the folder nodes at the top level
+        >>> top_level = self.ls()
+        >>> print(f'top_level = {ub.urepr(top_level, nl=1)}')
+        top_level = [
+            'f137a2dd21bbc1b99aa5c0f6bf02a805',
+            '7e64e319657a9516ec78490da03edccb',
+            '1071671e7bffa0532e930debee501d2e',
+        ]
+        >>> # Change the CWD to the music folder
+        >>> self.cd('7e64e319657a9516ec78490da03edccb')
+        >>> # Print the graph at the CWD
+        >>> self.tree()
+        ╙──  7e64e319657a9516ec78490da03edccb : 📂 CollectionFolder - Music
+            ├─╼  8288fbf650ae583fc36d715b2c82dff5 : ♬ Audio - Zurück in die Zukunft
+            ├─╼  76ed290f795e4a24a9cceba4aa8bfb33 : ♬ Audio - Heart_Monitor_Beep--freesound.org
+            └─╼  7a7f9d14d80062884dbefd156818b339 : ♬ Audio - Clair De Lune
+        >>> # Searching is in the context of the cwd
+        >>> found = list(self.find('the'))
+        >>> print(f'found = {ub.urepr(found, nl=1)}')
+        []
+        >>> found = list(self.find('Clair'))
+        >>> print(f'found = {ub.urepr(found, nl=1)}')
+        found = [
+            '7a7f9d14d80062884dbefd156818b339',
+        ]
+        >>> # Print details about a specific item
+        >>> self.print_item('7a7f9d14d80062884dbefd156818b339')
+        node=7a7f9d14d80062884dbefd156818b339
+        properties = {
+            'expanded': False,
+        }
+        item = {
+            'Name': 'Clair De Lune',
+            ...
+            'Id': '7a7f9d14d80062884dbefd156818b339',
+            ...
+            'Path': '/media/music/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3',
+            ...
+            'MediaType': 'Audio',
+        }
     """
     def __init__(self, client):
         self.client = client
@@ -75,6 +122,12 @@ class MediaGraph:
 
     @classmethod
     def demo_client(cls):
+        """
+        Create a client for demos
+
+        Returns:
+            jellyfin_apiclient_python.JellyfinClient
+        """
         # TODO: Ensure test environment can spin up a dummy jellyfin server.
         from jellyfin_apiclient_python import JellyfinClient
         client = JellyfinClient()
@@ -92,18 +145,28 @@ class MediaGraph:
         return client
 
     def tree(self, max_depth=None):
+        """
+        Print the graph at the current working directory.
+        """
         if self._cwd is None:
             self.print_graph(max_depth=max_depth)
         else:
             self.print_graph(sources=[self._cwd], max_depth=max_depth)
 
     def ls(self):
+        """
+        List the children of the current working directory (node) in the graph.
+        """
         if self._cwd is None:
             return self._media_root_nodes
         else:
             return self._cwd_children
 
     def cd(self, node):
+        """
+        Change the cwd to a specific node, and add its children to the graph if
+        they have not already been.
+        """
         self._cwd = node
         if node is None:
             self._cwd_children = self._media_root_nodes
@@ -117,6 +180,10 @@ class MediaGraph:
         self.open_node(node, verbose=1)
 
     def setup(self):
+        """
+        Perform an initial walk to build the graph using the user-specified
+        configuration.
+        """
         try:
             self._init_media_folders()
         finally:
@@ -186,6 +253,9 @@ class MediaGraph:
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
 
     def open_node(self, node, verbose=0, max_depth=1):
+        """
+        Add some or all of a node's children to the graph.
+        """
         if verbose:
             print(f'open node={node}')
         node_data = self.graph.nodes[node]
@@ -391,9 +461,16 @@ class MediaGraph:
             node_data['label'] = label
 
     def print(self):
+        """
+        Alias for :func:`MediaGraph.print_graph`.
+        """
         self.print_graph()
 
     def print_graph(self, sources=None, max_depth=None):
+        """
+        Prints the current state of the media graph to stdout at a particular
+        starting point with a specified depth.
+        """
         nx.write_network_text(self.graph, path=rich.print, end='', sources=sources, max_depth=max_depth)
 
     def print_item(self, node):
@@ -404,11 +481,34 @@ class MediaGraph:
         rprint(f'properties = {ub.urepr(properties, nl=1)}')
         rprint(f'item = {ub.urepr(item, nl=1)}')
 
-    def find(self, pattern, data=False):
+    def find(self, pattern, data=False, root=None):
+        """
+        Search for a pattern within the current directory.
+
+        Args:
+            pattern (str): text to find in the media name.
+            data (bool): if True, also return the data dict
+            root (str | None): if specified search from this location,
+                if unspecified the cwd is used.
+
+        Yields:
+            str | Tuple[str, dict]:
+                the id of the found item, or the id and its data if
+                data=True
+        """
+        import networkx as nx
+        if root is None:
+            root = self._cwd
         graph = self.graph
-        for node in graph.nodes:
+        if root is None:
+            nodes = graph.nodes
+        else:
+            nodes = nx.descendants(graph, root)
+        for node in nodes:
             node_data = graph.nodes[node]
             item = node_data['item']
+            # TODO: allow multiple types of patterns (i.e. similar to
+            # kwutil.Pattern) to abstract regex, glob, and raw string matching.
             if pattern in item['Name']:
                 if data:
                     yield node, node_data
