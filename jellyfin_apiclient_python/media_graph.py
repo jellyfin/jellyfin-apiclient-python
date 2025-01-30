@@ -351,33 +351,45 @@ class MediaGraph:
                                 graph.add_edge(special_parent['Id'], special['Id'])
                                 assert not special['IsFolder']
 
-            # Query API for children (todo: we want to async this)
-            children = client.jellyfin.user_items(params={
-                'ParentId': parent_id,
-                'Recursive': False,
-                'fields': fields,
-            })
-            if children and 'Items' in children:
-                stats['total'] += len(children['Items'])
-                for child in children['Items']:
-                    if child['Id'] in graph.nodes:
-                        stats['nondag_edge_types'][(parent['Type'], child['Type'])] += 1
-                    else:
-                        if child['Type'] not in type_add_blocklist:
-                            stats['edge_types'][(parent['Type'], child['Type'])] += 1
-                            stats['node_types'][child['Type']] += 1
+            perquery_limit = 200
+            offset = 0
+            need_more = True
+            while need_more:
+                # Query API for children (todo: we want to async this)
+                children = client.jellyfin.user_items(params={
+                    'ParentId': parent_id,
+                    'Recursive': False,
+                    'fields': fields,
+                    'limit': perquery_limit,
+                    'startIndex': offset,
+                })
 
-                            # Add child to graph
-                            graph.add_node(child['Id'], item=child, properties=dict(expanded=False))
-                            graph.add_edge(parent['Id'], child['Id'])
+                if children and 'Items' in children:
+                    stats['total'] += len(children['Items'])
+                    for child in children['Items']:
+                        if child['Id'] in graph.nodes:
+                            stats['nondag_edge_types'][(parent['Type'], child['Type'])] += 1
+                        else:
+                            if child['Type'] not in type_add_blocklist:
+                                stats['edge_types'][(parent['Type'], child['Type'])] += 1
+                                stats['node_types'][child['Type']] += 1
 
-                            if child['IsFolder'] and child['Type'] not in type_recurse_blocklist:
-                                child_frame = StackFrame(child, frame.depth + 1)
-                                stack.append(child_frame)
+                                # Add child to graph
+                                graph.add_node(child['Id'], item=child, properties=dict(expanded=False))
+                                graph.add_edge(parent['Id'], child['Id'])
 
-            if timer.toc() > 1.9:
-                pman.update_info(ub.urepr(stats))
-                timer.tic()
+                                if child['IsFolder'] and child['Type'] not in type_recurse_blocklist:
+                                    child_frame = StackFrame(child, frame.depth + 1)
+                                    stack.append(child_frame)
+
+                offset += len(children['Items'])
+                need_more = offset < children['TotalRecordCount']
+
+                if timer.toc() > 1.9:
+                    print(f'stats = {ub.urepr(stats, nl=1)}')
+                    pman.update_info(ub.urepr(stats))
+                    timer.tic()
+
         folder_prog.stop()
 
     def _update_graph_labels(self, sources=None):
