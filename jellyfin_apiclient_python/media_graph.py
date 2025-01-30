@@ -386,7 +386,6 @@ class MediaGraph:
                 need_more = offset < children['TotalRecordCount']
 
                 if timer.toc() > 1.9:
-                    print(f'stats = {ub.urepr(stats, nl=1)}')
                     pman.update_info(ub.urepr(stats))
                     timer.tic()
 
