@@ -96,6 +96,7 @@ class MediaGraph:
             'initial_depth': 0,
             'include_collection_types': None,
             'exclude_collection_types': None,
+            'perquery_limit': 200,
         }
         self.display_config = {
             'show_path': False,
@@ -351,7 +352,8 @@ class MediaGraph:
                                 graph.add_edge(special_parent['Id'], special['Id'])
                                 assert not special['IsFolder']
 
-            perquery_limit = 200
+            # Pagenate children queries
+            perquery_limit = self.walk_config['perquery_limit']
             offset = 0
             need_more = True
             while need_more:
