@@ -188,6 +188,9 @@ class BiggerAPIMixin:
     def videos(self, handler):
         return self._get("Videos%s" % handler)
 
+    def media_segments(self, handler, params=None):
+        return self._get("MediaSegments%s" % handler, params)
+
     def artwork(self, item_id, art, max_width, ext="jpg", index=None):
         params = {"MaxWidth": max_width, "format": ext}
         handler = ("Items/%s/Images/%s" % (item_id, art) if index is None
@@ -436,6 +439,9 @@ class GranularAPIMixin:
 
     def get_additional_parts(self, item_id):
         return self.videos("/%s/AdditionalParts" % item_id)
+
+    def get_media_segments(self, item_id):
+        return self.media_segments("/%s" % item_id)
 
     def delete_item(self, item_id):
         return self.items("/%s" % item_id, "DELETE")
