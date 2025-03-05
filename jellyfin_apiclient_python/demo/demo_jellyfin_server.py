@@ -91,13 +91,7 @@ class DemoJellyfinServerManager():
             '--detach=true',
             '--name', self.oci_container_name,
             '--publish', f'{self.port}:8096/tcp',
-            # '--user', 'uid:gid',
-            # Dont mount these so we start with a fresh database on docker
-            # restart
-            # '--volume', f'{cache_dpath}:/cache',
-            # '--volume', f'{config_dpath}:/config',
             '--mount', f'type=bind,source={self.media_dpath},target=/media',
-            # '--restart', 'unless-stopped',
             '--restart', 'no',
             'jellyfin/jellyfin',
         ]
@@ -119,7 +113,14 @@ class DemoJellyfinServerManager():
         import requests
         time.sleep(1)
 
-        resp = requests.post(f'{self.url}:{self.port}/Startup/Configuration', json={"UICulture": "en-US", "MetadataCountryCode": "US", "PreferredMetadataLanguage": "en"})
+        payload = {
+            "UICulture": "en-US",
+            "MetadataCountryCode": "US",
+            "PreferredMetadataLanguage": "en"
+        }
+        resp = requests.post(
+            f'{self.url}:{self.port}/Startup/Configuration',
+            json=payload)
         assert resp.ok
         time.sleep(1)
 
@@ -127,17 +128,30 @@ class DemoJellyfinServerManager():
         assert resp.ok
         time.sleep(1)
 
-        resp = requests.post(f'{self.url}:{self.port}/Startup/User', json={"Name": "jellyfin", "Password": "jellyfin"})
+        resp = requests.post(
+            f'{self.url}:{self.port}/Startup/User',
+            json={"Name": "jellyfin", "Password": "jellyfin"})
         assert resp.ok
         time.sleep(1)
 
-        payload = {"UICulture": "en-US", "MetadataCountryCode": "US", "PreferredMetadataLanguage": "en"}
-        resp = requests.post(f'{self.url}:{self.port}/Startup/Configuration', json=payload)
+        payload = {
+            "UICulture": "en-US",
+            "MetadataCountryCode": "US",
+            "PreferredMetadataLanguage": "en"
+        }
+        resp = requests.post(
+            f'{self.url}:{self.port}/Startup/Configuration',
+            json=payload)
         assert resp.ok
         time.sleep(1)
 
-        payload = {"EnableRemoteAccess": True, "EnableAutomaticPortMapping": False}
-        resp = requests.post(f'{self.url}:{self.port}/Startup/RemoteAccess', json=payload)
+        payload = {
+            "EnableRemoteAccess": True,
+            "EnableAutomaticPortMapping": False
+        }
+        resp = requests.post(
+            f'{self.url}:{self.port}/Startup/RemoteAccess',
+            json=payload)
         assert resp.ok
         time.sleep(1)
 
