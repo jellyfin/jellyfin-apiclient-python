@@ -6,6 +6,7 @@ import json
 import logging
 import socket
 from datetime import datetime
+from enum import Enum
 from operator import itemgetter
 
 import urllib3
@@ -18,12 +19,11 @@ import traceback
 #################################################################################################
 
 LOG = logging.getLogger('JELLYFIN.' + __name__)
-CONNECTION_STATE = {
-    'Unavailable': 0,
-    'ServerSelection': 1,
-    'ServerSignIn': 2,
-    'SignedIn': 3
-}
+class CONNECTION_STATE(Enum):
+    Unavailable = 0
+    ServerSelection = 1
+    ServerSignIn = 2
+    SignedIn = 3
 
 #################################################################################################
 
