@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from operator import itemgetter
 
+import requests
 import urllib3
 
 from .credentials import Credentials
@@ -40,6 +41,16 @@ class ConnectionManager(object):
         self.config = client.config
         self.credentials = Credentials()
         self.API = API(HTTP(client))
+        
+        self.session = None
+
+    def create_session_with_client_auth(self):
+        if self.config.data['auth.tls_client_cert'] and self.config.data['auth.tls_client_key']:
+            self.session = requests.Session()
+            self.session.cert = (self.config.data['auth.tls_client_cert'], self.config.data['auth.tls_client_key'])
+            
+            if self.config.data['auth.tls_server_ca']:
+                self.session.verify = self.config.data['auth.tls_server_ca']
 
     def clear_data(self):
 
@@ -108,7 +119,7 @@ class ConnectionManager(object):
         if options is not None:
             LOG.warn("The options option on login() has no effect.")
 
-        data = self.API.login(server_url, username, password) # returns empty dict on failure
+        data = self.API.login(server_url, username, password, self.session) # returns empty dict on failure
 
         if not data:
             LOG.info("Failed to login as `"+username+"`")
@@ -153,7 +164,7 @@ class ConnectionManager(object):
         address = self._normalize_address(address)
 
         try:
-            response_url = self.API.check_redirect(address)
+            response_url = self.API.check_redirect(address, self.session)
             if address != response_url:
                 address = response_url
             LOG.info("connect_to_address %s succeeded", address)
@@ -176,7 +187,7 @@ class ConnectionManager(object):
         LOG.info("begin connect_to_server")
 
         try:
-            result = self.API.get_public_info(server.get('address'))
+            result = self.API.get_public_info(server.get('address'), self.session)
 
             if not result:
                 LOG.error("Failed to connect to server: %s" % server.get('address'))
@@ -335,7 +346,7 @@ class ConnectionManager(object):
             self.config.data['auth.token'] = server.pop('AccessToken', None)
 
         elif verify_authentication and server.get('AccessToken'):
-            system_info = self.API.validate_authentication_token(server)
+            system_info = self.API.validate_authentication_token(server, self.session)
             if system_info:
 
                 self._update_server_info(server, system_info)

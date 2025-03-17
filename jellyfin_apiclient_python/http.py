@@ -29,10 +29,18 @@ class HTTP(object):
         self.config = client.config
 
     def start_session(self):
-
         self.session = requests.Session()
 
         max_retries = self.config.data['http.max_retries']
+        
+        # Configure the session for tls client authentication
+        if self.client.config.data['auth.tls_client_cert'] and self.client.config.data['auth.tls_client_key']:
+            self.session.cert = (self.client.config.data['auth.tls_client_cert'], 
+                                 self.client.config.data['auth.tls_client_key'])
+            
+            if self.client.config.data['auth.tls_server_ca']:
+                self.session.verify = self.client.config.data['auth.tls_server_ca']
+
         self.session.mount("http://", requests.adapters.HTTPAdapter(max_retries=max_retries))
         self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=max_retries))
 
