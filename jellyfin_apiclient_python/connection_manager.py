@@ -41,14 +41,14 @@ class ConnectionManager(object):
         self.config = client.config
         self.credentials = Credentials()
         self.API = API(HTTP(client))
-        
+
         self.session = None
 
     def create_session_with_client_auth(self):
-        if self.config.data['auth.tls_client_cert'] and self.config.data['auth.tls_client_key']:
+        if 'auth.tls_client_cert' in self.config.data and 'auth.tls_client_key' in self.config.data:
             self.session = requests.Session()
             self.session.cert = (self.config.data['auth.tls_client_cert'], self.config.data['auth.tls_client_key'])
-            
+
             if self.config.data['auth.tls_server_ca']:
                 self.session.verify = self.config.data['auth.tls_server_ca']
 

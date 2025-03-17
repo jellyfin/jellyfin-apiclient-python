@@ -32,12 +32,12 @@ class HTTP(object):
         self.session = requests.Session()
 
         max_retries = self.config.data['http.max_retries']
-        
+
         # Configure the session for tls client authentication
-        if self.client.config.data['auth.tls_client_cert'] and self.client.config.data['auth.tls_client_key']:
-            self.session.cert = (self.client.config.data['auth.tls_client_cert'], 
+        if 'auth.tls_client_cert' in self.client.config.data and 'auth.tls_client_key' in self.client.config.data:
+            self.session.cert = (self.client.config.data['auth.tls_client_cert'],
                                  self.client.config.data['auth.tls_client_key'])
-            
+
             if self.client.config.data['auth.tls_server_ca']:
                 self.session.verify = self.client.config.data['auth.tls_server_ca']
 
@@ -82,7 +82,7 @@ class HTTP(object):
             raise AttributeError("Request cannot be empty")
 
         data = self._request(data)
-        
+
         params = data["params"]
         if "api_key" not in params:
             params["api_key"] = self.config.data.get('auth.token')
@@ -115,7 +115,7 @@ class HTTP(object):
             try:
                 r = self._requests(session or self.session or requests, data.pop('type', "GET"), **data, stream=stream)
                 if stream:
-                    for chunk in r.iter_content(chunk_size=8192): 
+                    for chunk in r.iter_content(chunk_size=8192):
                         if chunk: # filter out keep-alive new chunks
                             dest_file.write(chunk)
                 else:

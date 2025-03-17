@@ -58,11 +58,11 @@ class WSClient(threading.Thread):
 
         # Configure SSL context for client authentication
         ssl_context = None
-        if self.client.config.data['auth.tls_client_cert'] and self.client.config.data['auth.tls_client_key']:
+        if 'auth.tls_client_cert' in self.client.config.data and 'auth.tls_client_key' in self.client.config.data:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             ssl_context.load_default_certs()
             ssl_context.load_cert_chain(self.client.config.data['auth.tls_client_cert'], self.client.config.data['auth.tls_client_key'])
-            
+
             if self.client.config.data['auth.tls_server_ca']:
                 ssl_context.load_verify_locations(self.client.config.data['auth.tls_server_ca'])
 
@@ -70,7 +70,7 @@ class WSClient(threading.Thread):
                                           on_message=lambda ws, message: self.on_message(ws, message),
                                           on_error=lambda ws, error: self.on_error(ws, error))
         self.wsc.on_open = lambda ws: self.on_open(ws)
-        
+
         if not self.multi_client:
             if self.global_wsc is not None:
                 self.global_wsc.close()
