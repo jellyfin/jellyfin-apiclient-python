@@ -527,14 +527,14 @@ class GranularAPIMixin:
         Args:
             item_id (str): item uuid to update userdata for
 
-            data (dict): the information to add to the current user's 
+            data (dict): the information to add to the current user's
                 userdata for the item. Any fields in data overwrite the
                 equivalent fields in UserData, other UserData fields are
                 left untouched.
 
         References:
             .. [UpdateItemUserData] https://api.jellyfin.org/#tag/Items/operation/UpdateItemUserData
-        """        
+        """
         return self._post(f"UserItems/{item_id}/UserData", params={"UserId": "{UserId}"}, json=data)
 
 
@@ -717,13 +717,13 @@ class GranularAPIMixin:
     def get_server_time(self):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
 
-    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True):
+    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True, media_source_id=None):
         args = {
             'UserId': "{UserId}",
             'AutoOpenLiveStream': is_playback,
             'IsPlayback': is_playback
         }
-        if profile is None:
+        if profile is not None:
             args['DeviceProfile'] = profile
         if sid:
             args['SubtitleStreamIndex'] = sid
@@ -731,10 +731,9 @@ class GranularAPIMixin:
             args['AudioStreamIndex'] = aid
         if start_time_ticks:
             args['StartTimeTicks'] = start_time_ticks
-        # TODO:
-        # Should this be a get?
-        # https://api.jellyfin.org/#tag/MediaInfo
-        # https://api.jellyfin.org/#tag/MediaInfo/operation/GetPostedPlaybackInfo
+        if media_source_id:
+            args['MediaSourceId'] = media_source_id
+
         return self.items("/%s/PlaybackInfo" % item_id, "POST", json=args)
 
     def get_live_stream(self, item_id, play_id, token, profile):
