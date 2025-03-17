@@ -13,7 +13,8 @@ LOG = logging.getLogger('JELLYFIN.' + __name__)
 
 
 def jellyfin_url(client, handler):
-    return "%s/%s" % (client.config.data['auth.server'], handler)
+    base_url = client.config.data['auth.server'].rstrip('/')
+    return f"{base_url}/{handler.lstrip('/')}"
 
 
 def basic_info():
