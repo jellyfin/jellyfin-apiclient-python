@@ -182,6 +182,12 @@ class BiggerAPIMixin:
             return self._get("Items%s" % handler, params)
 
     def user_items(self, handler="", params=None):
+        """
+        Calls the /Users/{userId}/Items endpoint [GetItemsByUserId]_.
+
+        References:
+            .. [GetItemsByUserId] https://api.jellyfin.org/#tag/Items/operation/GetItemsByUserId
+        """
         return self.users("/Items%s" % handler, params=params)
 
     def shows(self, handler, params):
@@ -630,6 +636,33 @@ class GranularAPIMixin:
         if hasUserId is not None:
             params['hasUserId'] = hasUserId
         return self._get("System/ActivityLog/Entries", params=params)
+
+    def get_log_file(self, name=None):
+        """
+        Args:
+            name (str | None):
+                The name of one of the logfiles returned by
+                `:func:get_server_logs`. If unspecified, the most
+                recently modified log will be returned.
+
+        Returns:
+            ...
+
+        References:
+            .. [GetLogFile] https://api.jellyfin.org/#tag/System/operation/GetLogFile
+        """
+        if name is None:
+            infos = self.get_server_logs()
+            if len(infos) == 0:
+                raise Exception('No system logs are available')
+            infos = sorted(infos, key=lambda d: d['DateModified'])
+            name = infos[-1]['Name']
+        result = self._get("System/Logs/Log", params={'name': name})
+        if result is None:
+            raise AssertionError(
+                ('FIXME: Result should not be none, but that seems to always '
+                 'be the case. Is this endpoint broken?'))
+        return result
 
     def post_capabilities(self, data):
         return self.sessions("/Capabilities/Full", "POST", json=data)

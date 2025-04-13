@@ -27,6 +27,15 @@ class HTTP(object):
 
         self.client = client
         self.config = client.config
+        self._debugging = False  # for developer usage
+
+    def _set_debugging(self, flag):
+        import jellyfin_apiclient_python
+        if flag:
+            jellyfin_apiclient_python.http.LOG.setLevel(logging.DEBUG)
+        else:
+            jellyfin_apiclient_python.http.LOG.setLevel(logging.INFO)
+        self._debugging = flag
 
     def start_session(self):
         self.session = requests.Session()
@@ -107,6 +116,11 @@ class HTTP(object):
 
         data = self._request(data)
         LOG.debug("--->[ http ] %s", json.dumps(data, indent=4))
+
+        if self._debugging:
+            curl_cmd = generate_curl_command(data)
+            LOG.debug("--->[ curlcmd ]\n%s", curl_cmd)
+
         retry = data.pop('retry', 5)
         stream = dest_file is not None
 
@@ -270,3 +284,37 @@ class HTTP(object):
             return session.head(**kwargs)
         elif action == "DELETE":
             return session.delete(**kwargs)
+
+
+def generate_curl_command(data):
+    # Start with the curl command and request type
+    import shlex
+    from urllib.parse import urlencode
+    command_parts = ["curl"]
+    if 'type' in data:
+        command_parts.extend(["-X", data['type']])
+
+    # Build the URL with query parameters
+    url = data['url']
+    if 'params' in data and data['params']:
+        # Filter out None values and convert lists to comma-separated strings
+        params = {
+            k: ','.join(v) if isinstance(v, list) else v
+            for k, v in data['params'].items()
+            if v is not None
+        }
+        query_string = urlencode(params, doseq=True)
+        url = f"{url}?{query_string}"
+    command_parts.append(shlex.quote(url))
+
+    # Add headers
+    if 'headers' in data:
+        for key, value in data['headers'].items():
+            command_parts.extend(["-H", shlex.quote(f"{key}: {value}")])
+
+    # Handle compression if requested
+    if 'headers' in data and data['headers'].get('Accept-encoding') == 'gzip':
+        command_parts.append("--compressed")
+
+    command = ' '.join(command_parts)
+    return command
