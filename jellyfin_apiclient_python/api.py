@@ -1081,6 +1081,29 @@ class ExperimentalAPIMixin:
                           data=data, headers=headers)
         return resp
 
+    def set_user_image(self, user_id, image_data):
+        """
+        Args:
+            item_id (str): user id to set the image for
+
+            image_data (str | PathLike | bytes | PIL.Image):
+                A path to an image on disk (PIL must be installed to read it),
+                or a base64 encoded image.
+
+        References:
+            .. [PostUserImage] https://api.jellyfin.org/#tag/Image/operation/PostUserImage
+        """
+        image_bytes, mimetype = self._coerce_image_bytes(image_data)
+        data = image_bytes.decode()
+        # Overriding headers are important for this call
+        headers = {
+            'Accept': '*/*',
+            'Content-type': mimetype,
+        }
+        resp = self._post("/UserImage", params={'user_id': user_id}, data=data,
+                          headers=headers)
+        return resp
+
 
 class CollectionAPIMixin:
     """
