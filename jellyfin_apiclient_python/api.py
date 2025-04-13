@@ -1013,6 +1013,74 @@ class ExperimentalAPIMixin:
         now_playing['PlayState'] = play_state
         return now_playing
 
+    @staticmethod
+    def _coerce_image_bytes(image_data) -> bytes:
+        """
+        Transform data into a common b64 representation with associated mime
+        type
+        """
+        import os
+        import base64
+        import mimetypes
+
+        image_bytes = None
+
+        # It doesn't seem to matter which image mimetype we choose
+        mimetype = 'image/jpeg'
+
+        if isinstance(image_data, (str, os.PathLike)):
+            file_path = image_data
+
+            mimetype, encoding = mimetypes.guess_type(file_path)
+
+            with open(file_path, 'rb') as f:
+                raw_data = f.read()
+                img_bytes1 = base64.b64encode(raw_data)
+
+            image_bytes = img_bytes1
+        elif isinstance(image_data, bytes):
+            image_bytes = image_data
+
+        if image_bytes is None:
+            raise Exception("unable to construct image bytes")
+
+        return image_bytes, mimetype
+
+    def set_item_image(self, item_id, image_data, image_type='Primary'):
+        """
+        Args:
+            item_id (str): item to set the image of
+
+            image_data (str | PathLike | bytes | PIL.Image):
+                A path to an image on disk (PIL must be installed to read it),
+                or a base64 encoded image.
+
+            image_type (str): A valid image type. I.e. one of
+                'Primary', 'Art', 'Backdrop', 'Banner', 'Logo', 'Thumb',
+                'Disc', 'Box', 'Screenshot', 'Menu', 'Chapter', 'BoxRear',
+                'Profile'.
+
+        References:
+            .. [SetItemImageByIndex] https://api.jellyfin.org/#tag/Image/operation/SetItemImageByIndex
+        """
+        from jellyfin_apiclient_python.constants import ImageType
+
+        image_bytes, mimetype = self._coerce_image_bytes(image_data)
+
+        if image_type not in ImageType:
+            raise KeyError(f'image_type must be one of: {ImageType}')
+
+        data = image_bytes.decode()
+
+        # Overriding headers are important for this call
+        headers = {
+            'Accept': '*/*',
+            'Content-type': mimetype,
+        }
+        resp = self.items(f'/{item_id}/Images/{image_type}', action='POST',
+                          data=data, headers=headers)
+        return resp
+
 
 class CollectionAPIMixin:
     """
