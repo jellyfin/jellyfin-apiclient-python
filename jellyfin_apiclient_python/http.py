@@ -207,7 +207,7 @@ class HTTP(object):
         if 'url' not in data:
             data['url'] = "%s/%s" % (self.config.data.get("auth.server", ""), data.pop('handler', ""))
 
-        data['headers'] = self._get_default_headers()
+        data['headers'] = self._get_default_headers() | (data.get('headers', None) or {})
         data['timeout'] = data.get('timeout') or self.config.data['http.timeout']
         data['verify'] = data.get('verify') or self.config.data.get('auth.ssl', False)
         data['url'] = self._replace_user_info(data['url'])
@@ -217,6 +217,9 @@ class HTTP(object):
         return data
 
     def _process_params(self, params):
+        if isinstance(params, str):
+            # Json is being used as data
+            return
 
         for key in params:
             value = params[key]

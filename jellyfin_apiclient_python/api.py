@@ -67,8 +67,9 @@ class InternalAPIMixin:
     def _get_url(self, handler, params=None):
         return self._http_url("GET", handler, {"params": params})
 
-    def _post(self, handler, json=None, params=None):
-        return self._http("POST", handler, {'params': params, 'json': json})
+    def _post(self, handler, json=None, params=None, data=None, headers=None):
+        return self._http("POST", handler, {'params': params, 'json': json,
+                                            'data': data, 'headers': headers})
 
     def _delete(self, handler, params=None):
         return self._http("DELETE", handler, {'params': params})
@@ -172,9 +173,9 @@ class BiggerAPIMixin:
         }
         return self.virtual_folders('POST', params=params)
 
-    def items(self, handler="", action="GET", params=None, json=None):
+    def items(self, handler="", action="GET", params=None, json=None, data=None, headers=None):
         if action == "POST":
-            return self._post("Items%s" % handler, json, params)
+            return self._post("Items%s" % handler, json, params, data, headers)
         elif action == "DELETE":
             return self._delete("Items%s" % handler, params)
         else:
