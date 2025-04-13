@@ -1046,26 +1046,32 @@ class ExperimentalAPIMixin:
 
         return image_bytes, mimetype
 
-    def set_item_image(self, item_id, image_data, image_type='Primary'):
+    def set_item_image(self, item_id, image_data, image_type='Primary',
+                       mimetype='auto'):
         """
         Args:
             item_id (str): item to set the image of
 
-            image_data (str | PathLike | bytes | PIL.Image):
-                A path to an image on disk (PIL must be installed to read it),
-                or a base64 encoded image.
+            image_data (str | PathLike | bytes):
+                A path to an image on disk or raw bytes of an image.
 
             image_type (str): A valid image type. I.e. one of
                 'Primary', 'Art', 'Backdrop', 'Banner', 'Logo', 'Thumb',
                 'Disc', 'Box', 'Screenshot', 'Menu', 'Chapter', 'BoxRear',
                 'Profile'.
 
+            mimetype (str): if "auto", attempt to infer the mimetype.
+                falls back to image/jpeg if unable. Otherwise this is used.
+
         References:
             .. [SetItemImageByIndex] https://api.jellyfin.org/#tag/Image/operation/SetItemImageByIndex
         """
         from jellyfin_apiclient_python.constants import ImageType
 
-        image_bytes, mimetype = self._coerce_image_bytes(image_data)
+        image_bytes, auto_mimetype = self._coerce_image_bytes(image_data)
+
+        if mimetype == 'auto':
+            mimetype = auto_mimetype
 
         if image_type not in ImageType:
             raise KeyError(f'image_type must be one of: {ImageType}')
@@ -1081,19 +1087,25 @@ class ExperimentalAPIMixin:
                           data=data, headers=headers)
         return resp
 
-    def set_user_image(self, user_id, image_data):
+    def set_user_image(self, user_id, image_data, mimetype='auto'):
         """
         Args:
             item_id (str): user id to set the image for
 
-            image_data (str | PathLike | bytes | PIL.Image):
-                A path to an image on disk (PIL must be installed to read it),
-                or a base64 encoded image.
+            image_data (str | PathLike | bytes):
+                A path to an image on disk or raw bytes of an image.
+
+            mimetype (str): if "auto", attempt to infer the mimetype.
+                falls back to image/jpeg if unable. Otherwise this is used.
 
         References:
             .. [PostUserImage] https://api.jellyfin.org/#tag/Image/operation/PostUserImage
         """
-        image_bytes, mimetype = self._coerce_image_bytes(image_data)
+        image_bytes, auto_mimetype = self._coerce_image_bytes(image_data)
+
+        if mimetype == 'auto':
+            mimetype = auto_mimetype
+
         data = image_bytes.decode()
         # Overriding headers are important for this call
         headers = {
