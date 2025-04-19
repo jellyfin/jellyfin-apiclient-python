@@ -348,13 +348,16 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
-    def get_next(self, index=None, limit=1):
-        return self.shows("/NextUp", {
-            'Limit': limit,
-            'UserId': "{UserId}",
-            'StartIndex': None if index is None else int(index)
-        })
-
+    def get_next(self, userId=None, index=None, limit=1, seriesId=None):
+        return self.shows(
+            '/NextUp',
+            {
+                'Limit': limit,
+                'UserId': '{UserId}' if userId is None else userId,
+                'StartIndex': None if index is None else int(index),
+                'SeriesId': None if seriesId is None else seriesId,
+            },
+        )
     def get_adjacent_episodes(self, show_id, item_id):
         return self.shows("/%s/Episodes" % show_id, {
             'UserId': "{UserId}",
