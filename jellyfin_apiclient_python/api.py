@@ -3,11 +3,18 @@
 For API info see:
     https://api.jellyfin.org/
 """
-from typing import List
-from datetime import datetime
-import requests
 import json
 import logging
+from datetime import datetime
+from typing import List, TYPE_CHECKING, Any, Dict, Union
+
+import requests
+
+from jellyfin_apiclient_python.util import verify_uuid
+
+# Only import on type checking, else there will be a cyclical import
+if TYPE_CHECKING:
+    from jellyfin_apiclient_python.http import HTTP
 
 LOG = logging.getLogger('JELLYFIN.' + __name__)
 
@@ -46,35 +53,41 @@ class InternalAPIMixin:
     classes will use.
     """
 
-    def _http(self, action, url, request={}):
+    def _http(self: 'API', action, url, request=None):
+        if not request:
+            request = {}
         request.update({'type': action, 'handler': url})
 
         return self.client.request(request)
 
-    def _http_url(self, action, url, request={}):
+    def _http_url(self: 'API', action, url, request=None):
+        if not request:
+            request = {}
         request.update({"type": action, "handler": url})
 
         return self.client.request_url(request)
 
-    def _http_stream(self, action, url, dest_file, request={}):
+    def _http_stream(self: 'API', action, url, dest_file, request=None):
+        if not request:
+            request = {}
         request.update({'type': action, 'handler': url})
 
         self.client.request(request, dest_file=dest_file)
 
-    def _get(self, handler, params=None):
+    def _get(self: 'API', handler, params=None):
         return self._http("GET", handler, {'params': params})
 
-    def _get_url(self, handler, params=None):
+    def _get_url(self: 'API', handler, params=None):
         return self._http_url("GET", handler, {"params": params})
 
-    def _post(self, handler, json=None, params=None, data=None, headers=None):
+    def _post(self: 'API', handler, json=None, params=None, data=None, headers=None):
         return self._http("POST", handler, {'params': params, 'json': json,
                                             'data': data, 'headers': headers})
 
-    def _delete(self, handler, params=None):
+    def _delete(self: 'API', handler, params=None):
         return self._http("DELETE", handler, {'params': params})
 
-    def _get_stream(self, handler, dest_file, params=None):
+    def _get_stream(self: 'API', handler, dest_file, params=None):
         self._http_stream("GET", handler, dest_file, {'params': params})
 
 
@@ -83,21 +96,21 @@ class BiggerAPIMixin:
     Bigger section of the Jellyfin api
     """
 
-    def try_server(self):
+    def try_server(self: 'API'):
         return self._get("System/Info/Public")
 
-    def command(self, id, command, params=None, json=None):
+    def command(self: 'API', idx, command, params=None, json=None):
         return self._post(
-            "Sessions/%s/Command" % id,
+            "Sessions/%s/Command" % idx,
             json={"Name": command, "Arguments": json},
             params=params,
         )
 
-    def remote(self, id, command, params=None, json=None):
+    def remote(self: 'API', idx, command, params=None, json=None):
         handler = (
-            "Sessions/%s/Playing/%s" % (id, command)
+            "Sessions/%s/Playing/%s" % (idx, command)
             if command
-            else "Sessions/%s/Playing" % id
+            else "Sessions/%s/Playing" % idx
         )
         return self._post(
             handler,
@@ -105,7 +118,7 @@ class BiggerAPIMixin:
             params=params,
         )
 
-    def sessions(self, handler="", action="GET", params=None, json=None):
+    def sessions(self: 'API', handler="", action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Sessions%s" % handler, json, params)
         elif action == "DELETE":
@@ -113,7 +126,7 @@ class BiggerAPIMixin:
         else:
             return self._get("Sessions%s" % handler, params)
 
-    def users(self, handler="", action="GET", params=None, json=None):
+    def users(self: 'API', handler="", action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Users/{UserId}%s" % handler, json, params)
         elif action == "DELETE":
@@ -121,10 +134,10 @@ class BiggerAPIMixin:
         else:
             return self._get("Users/{UserId}%s" % handler, params)
 
-    def media_folders(self, params=None):
+    def media_folders(self: 'API', params=None):
         return self._get("Library/MediaFolders/", params)
 
-    def virtual_folders(self, action="GET", params=None, json=None):
+    def virtual_folders(self: 'API', action="GET", params=None, json=None):
         if action == "POST":
             return self._post("Library/VirtualFolders", json, params)
         elif action == "DELETE":
@@ -132,23 +145,23 @@ class BiggerAPIMixin:
         else:
             return self._get("Library/VirtualFolders", params)
 
-    def physical_paths(self, params=None):
+    def physical_paths(self: 'API', params=None):
         return self._get("Library/PhysicalPaths/", params)
 
-    def folder_contents(self, abspath="/", params=None, json=None):
+    def folder_contents(self: 'API', abspath="/", params=None, json=None):
         params = {} if params is None else params.copy()
         params['path'] = abspath
         params['includeFiles'] = params.get('includeFiles', True)
         params['includeDirectories'] = params.get('includeDirectories', True)
         return self._get("Environment/DirectoryContents", params)
 
-    def refresh_library(self):
+    def refresh_library(self: 'API'):
         """
         Starts a library scan.
         """
         return self._post("Library/Refresh")
 
-    def add_media_library(self, name, collectionType, paths, refreshLibrary=True):
+    def add_media_library(self: 'API', name, collectionType, paths, refreshLibrary=True):
         """
         Create a new media library.
 
@@ -173,7 +186,7 @@ class BiggerAPIMixin:
         }
         return self.virtual_folders('POST', params=params)
 
-    def items(self, handler="", action="GET", params=None, json=None, data=None, headers=None):
+    def items(self: 'API', handler="", action="GET", params=None, json=None, data=None, headers=None):
         if action == "POST":
             return self._post("Items%s" % handler, json, params, data, headers)
         elif action == "DELETE":
@@ -181,19 +194,19 @@ class BiggerAPIMixin:
         else:
             return self._get("Items%s" % handler, params)
 
-    def user_items(self, handler="", params=None):
+    def user_items(self: 'API', handler="", params=None):
         return self.users("/Items%s" % handler, params=params)
 
-    def shows(self, handler, params):
+    def shows(self: 'API', handler, params):
         return self._get("Shows%s" % handler, params)
 
-    def videos(self, handler):
+    def videos(self: 'API', handler):
         return self._get("Videos%s" % handler)
 
-    def media_segments(self, handler, params=None):
+    def media_segments(self: 'API', handler, params=None):
         return self._get("MediaSegments%s" % handler, params)
 
-    def artwork(self, item_id, art, max_width, ext="jpg", index=None):
+    def artwork(self: 'API', item_id, art, max_width, ext="jpg", index=None):
         params = {"MaxWidth": max_width, "format": ext}
         handler = ("Items/%s/Images/%s" % (item_id, art) if index is None
                    else "items/%s/images/%s/%s" % (item_id, art, index)
@@ -201,7 +214,7 @@ class BiggerAPIMixin:
 
         return self._get_url(handler, params)
 
-    def audio_url(self, item_id, container=None, audio_codec=None, max_streaming_bitrate=140000000):
+    def audio_url(self: 'API', item_id, container=None, audio_codec=None, max_streaming_bitrate=140000000):
         params = {
             "UserId": "{UserId}",
             "DeviceId": "{DeviceId}",
@@ -216,7 +229,7 @@ class BiggerAPIMixin:
 
         return self._get_url("Audio/%s/universal" % item_id, params)
 
-    def video_url(self, item_id, media_source_id=None):
+    def video_url(self: 'API', item_id, media_source_id=None):
         params = {
             "static": "true",
             "DeviceId": "{DeviceId}"
@@ -226,7 +239,7 @@ class BiggerAPIMixin:
 
         return self._get_url("Videos/%s/stream" % item_id, params)
 
-    def download_url(self, item_id):
+    def download_url(self: 'API', item_id):
         params = {}
         return self._get_url("Items/%s/Download" % item_id, params)
 
@@ -236,40 +249,173 @@ class GranularAPIMixin:
     Mixin class containing Jellyfin API granular user-level calls
     """
 
-    def get_users(self):
+    def get_users(self: 'API') -> List[Dict[str, Any]]:
         return self._get("Users")
 
-    def get_public_users(self):
+    def get_public_users(self: 'API') -> Union[List[Dict[str, Any]], None]:
+        """
+        Get properties of public users.
+        Used to display the publicly on a login screen.
+
+        Returns:
+            None if no public users were found.
+            Else a list of public users with their information
+
+        References:
+            https://api.jellyfin.org/#tag/User/operation/GetPublicUsers
+        """
         return self._get("Users/Public")
 
-    def get_user(self, user_id=None):
-        return self.users() if user_id is None else self._get("Users/%s" % user_id)
+    def get_user(self: 'API', user_id: str=None) -> Dict[str, Any]:
+        """
+        Returns information about a single user.
+        If no user is provided, information about the current user is returned.
 
-    def get_user_settings(self, client="emby"):
+        Args:
+            user_id: ID of the user - must be a valid UUID or None
+
+        Raises:
+            RuntimeError: if the user_id is not a valid UUID
+
+        Returns:
+            Dict with information about the user
+
+        References:
+            .. [GetUserById] https://api.jellyfin.org/#tag/User/operation/GetUserById
+
+        """
+        if not user_id:
+            return self.users()
+        verify_uuid(user_id)
+        return self._get("Users/%s" % user_id)
+
+    def get_user_settings(self: 'API', client: str="emby", user_id: str=None) -> Dict[str, Any]:
+        """
+        Return display settings for all users
+        Args:
+            client: ?
+            user_id: ID of the user - must be a valid UUID or None
+
+        Returns:
+            A Dict with user settings about playback, sorting, ...
+
+        Raises:
+            RuntimeError: if the user_id is not a valid UUID
+
+
+        References:
+            .. [GetDisplayPreferences] https://api.jellyfin.org/#tag/DisplayPreferences/operation/GetDisplayPreferences
+
+        Todo:
+            - Add information on what the client does
+        """
+        if user_id:
+            verify_uuid(user_id)
         return self._get("DisplayPreferences/usersettings", params={
-            "userId": "{UserId}",
+            "userId": user_id or "{UserId}",
             "client": client
         })
 
-    def new_user(self, name, pw):
+    def new_user(self: 'API', name: str, password: str):
+        """
+        Create a new user.
+        Args:
+            name: Name for the user
+            password: Password for the user
+
+        Returns:
+
+        Todo:
+            - What is the return value here?
+        """
         return self._post("Users/New", {
             "name": name,
-            "Password": pw
+            "Password": password
         })
 
-    def delete_user(self, userID):
-        return self._delete(f"Users/{userID}")
+    def delete_user(self: 'API', user_id: str) -> Union[Any, None]:
+        """
+        Deletes a user
+        Args:
+            user_id: ID of the user.
+            Must be a valid UUID
 
-    def get_views(self):
-        return self.users("/Views")
+        Returns:
+            None on success
 
-    def get_media_folders(self, fields=None):
+        Raises:
+            RuntimeError: if the user_id is not a valid UUID
+
+        Todo:
+            - What is the return value here in case of failure
+        """
+        verify_uuid(user_id)
+        return self._delete(f"Users/{user_id}")
+
+    def get_views(self: 'API', user_id: str = None, include_external_content: bool = None, preset_views: List[str]=None, include_hidden: bool=None) -> Dict[str, Any]:
+        """
+        Get information what the user has watched
+        Args:
+            user_id: The ID of the user to collect information for
+            include_external_content: Whether or not to include external views such as channels or live tv.
+            preset_views: Which Media types to include.
+            include_hidden:
+
+        Returns:
+            A Dict with total stats and per media stats.
+
+        Raises:
+            RuntimeError: if the user_id is not a valid UUID
+
+        References:
+            .. [GetUserViews] https://api.jellyfin.org/#tag/UserViews/operation/GetUserViews
+
+        Todo:
+            - Provide enum for collection type
+        """
         params = None
-        if fields is not None:
-            params = {'fields': fields}
-        return self.users("/Items", params=params)
 
-    def get_item(self, item_id):
+        if user_id is not None:
+            verify_uuid(user_id)
+            params = {
+                "userId": user_id,
+            }
+
+        if include_external_content is not None:
+            if not params:
+                params = {}
+            params['includeExternalContent'] = str(include_external_content)
+
+        if preset_views is not None:
+            if not params:
+                params = {}
+            params['presetViews'] = ", ".join(preset_views)
+
+        if include_hidden is not None:
+            if not params:
+                params = {}
+            params['includeHidden'] = str(include_hidden)
+
+        return self.users("/Views", params=params)
+
+    def get_media_folders(self: 'API', is_hidden: bool=None):
+        """
+        Returns the available media folders.
+        Args:
+            is_hidden: If only folders that are hidden are returned
+        Returns:
+            Todo
+        References:
+            .. [GetMediaFolders] https://api.jellyfin.org/#tag/Library/operation/GetMediaFolders
+        """
+        params = None
+        if is_hidden is not None:
+            params = {
+                "isHidden": str(is_hidden)
+            }
+        return self.media_folders(params=params)
+
+    def get_item(self: 'API', item_id):
         """
         Lookup metadata for an item.
 
@@ -278,12 +424,15 @@ class GranularAPIMixin:
 
         Returns:
             Dict[str, Any]: metadata keys and values for the queried item.
+
+        Todo:
+            This endpoint doesn't exist anymore?!?
         """
         return self.users("/Items/%s" % item_id, params={
             'Fields': info()
         })
 
-    def get_items(self, item_ids):
+    def get_items(self: 'API', item_ids):
         """
         Lookup metadata for multiple items.
 
@@ -293,13 +442,16 @@ class GranularAPIMixin:
         Returns:
             Dict[str, Any]: A result dictionary where the info from each
                 item is stored in the "Items" list.
+
+        Todo:
+            This endpoint doesn't exist anymore?!?
         """
         return self.users("/Items", params={
             'Ids': ','.join(str(x) for x in item_ids),
             'Fields': info()
         })
 
-    def update_item(self, item_id, data):
+    def update_item(self: 'API', item_id, data):
         """
         Updates the metadata for an item.
 
@@ -321,25 +473,25 @@ class GranularAPIMixin:
         assert body['Id'] == item_id
         return self.items('/' + item_id, action='POST', params=None, json=body)
 
-    def get_sessions(self):
+    def get_sessions(self: 'API'):
         return self.sessions(params={'ControllableByUserId': "{UserId}"})
 
-    def get_device(self, device_id):
+    def get_device(self: 'API', device_id):
         return self.sessions(params={'DeviceId': device_id})
 
-    def post_session(self, session_id, url, params=None, data=None):
+    def post_session(self: 'API', session_id, url, params=None, data=None):
         return self.sessions("/%s/%s" % (session_id, url), "POST", params, data)
 
-    def get_images(self, item_id):
+    def get_images(self: 'API', item_id):
         return self.items("/%s/Images" % item_id)
 
-    def get_suggestion(self, media="Movie,Episode", limit=1):
+    def get_suggestion(self: 'API', media="Movie,Episode", limit=1):
         return self.users("/Suggestions", params={
             'Type': media,
             'Limit': limit
         })
 
-    def get_recently_added(self, media=None, parent_id=None, limit=20):
+    def get_recently_added(self: 'API', media=None, parent_id=None, limit=20):
         return self.user_items("/Latest", {
             'Limit': limit,
             'UserId': "{UserId}",
@@ -348,34 +500,34 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
-    def get_next(self, index=None, limit=1):
+    def get_next(self: 'API', index=None, limit=1):
         return self.shows("/NextUp", {
             'Limit': limit,
             'UserId': "{UserId}",
             'StartIndex': None if index is None else int(index)
         })
 
-    def get_adjacent_episodes(self, show_id, item_id):
+    def get_adjacent_episodes(self: 'API', show_id, item_id):
         return self.shows("/%s/Episodes" % show_id, {
             'UserId': "{UserId}",
             'AdjacentTo': item_id,
             'Fields': "Overview"
         })
 
-    def get_season(self, show_id, season_id):
+    def get_season(self: 'API', show_id, season_id):
         return self.shows("/%s/Episodes" % show_id, {
             'UserId': "{UserId}",
             'SeasonId': season_id
         })
 
-    def get_genres(self, parent_id=None):
+    def get_genres(self: 'API', parent_id=None):
         return self._get("Genres", {
             'ParentId': parent_id,
             'UserId': "{UserId}",
             'Fields': info()
         })
 
-    def get_recommendation(self, parent_id=None, limit=20):
+    def get_recommendation(self: 'API', parent_id=None, limit=20):
         return self._get("Movies/Recommendations", {
             'ParentId': parent_id,
             'UserId': "{UserId}",
@@ -383,7 +535,7 @@ class GranularAPIMixin:
             'Limit': limit
         })
 
-    def get_items_by_letter(self, parent_id=None, media=None, letter=None):
+    def get_items_by_letter(self: 'API', parent_id=None, media=None, letter=None):
         return self.user_items(params={
             'ParentId': parent_id,
             'NameStartsWith': letter,
@@ -392,7 +544,7 @@ class GranularAPIMixin:
             'IncludeItemTypes': media
         })
 
-    def search_media_items(self, term=None, year=None, media=None, limit=20, parent_id=None):
+    def search_media_items(self: 'API', term=None, year=None, media=None, limit=20, parent_id=None):
         """
         Description:
             Search for media using terms, production year(s) and media type
@@ -429,72 +581,72 @@ class GranularAPIMixin:
             'parentId': parent_id,
         })
 
-    def get_channels(self):
+    def get_channels(self: 'API'):
         return self._get("LiveTv/Channels", {
             'UserId': "{UserId}",
             'EnableImages': True,
             'EnableUserData': True
         })
 
-    def get_intros(self, item_id):
+    def get_intros(self: 'API', item_id):
         return self.user_items("/%s/Intros" % item_id)
 
-    def get_additional_parts(self, item_id):
+    def get_additional_parts(self: 'API', item_id):
         return self.videos("/%s/AdditionalParts" % item_id)
 
-    def get_media_segments(self, item_id):
+    def get_media_segments(self: 'API', item_id):
         return self.media_segments("/%s" % item_id)
 
-    def delete_item(self, item_id):
+    def delete_item(self: 'API', item_id):
         return self.items("/%s" % item_id, "DELETE")
 
-    def get_local_trailers(self, item_id):
+    def get_local_trailers(self: 'API', item_id):
         return self.user_items("/%s/LocalTrailers" % item_id)
 
-    def get_transcode_settings(self):
+    def get_transcode_settings(self: 'API'):
         return self._get('System/Configuration/encoding')
 
-    def get_ancestors(self, item_id):
+    def get_ancestors(self: 'API', item_id):
         return self.items("/%s/Ancestors" % item_id, params={
             'UserId': "{UserId}"
         })
 
-    def get_items_theme_video(self, parent_id):
+    def get_items_theme_video(self: 'API', parent_id):
         return self.users("/Items", params={
             'HasThemeVideo': True,
             'ParentId': parent_id
         })
 
-    def get_themes(self, item_id):
+    def get_themes(self: 'API', item_id):
         return self.items("/%s/ThemeMedia" % item_id, params={
             'UserId': "{UserId}",
             'InheritFromParent': True
         })
 
-    def get_items_theme_song(self, parent_id):
+    def get_items_theme_song(self: 'API', parent_id):
         return self.users("/Items", params={
             'HasThemeSong': True,
             'ParentId': parent_id
         })
 
-    def get_plugins(self):
+    def get_plugins(self: 'API'):
         return self._get("Plugins")
 
-    def check_companion_installed(self):
+    def check_companion_installed(self: 'API'):
         try:
             self._get("/Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
             return True
         except Exception:
             return False
 
-    def get_seasons(self, show_id):
+    def get_seasons(self: 'API', show_id):
         return self.shows("/%s/Seasons" % show_id, params={
             'UserId': "{UserId}",
             'EnableImages': True,
             'Fields': info()
         })
 
-    def get_date_modified(self, date, parent_id, media=None):
+    def get_date_modified(self: 'API', date, parent_id, media=None):
         return self.users("/Items", params={
             'ParentId': parent_id,
             'Recursive': False,
@@ -505,7 +657,7 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
-    def get_userdata_date_modified(self, date, parent_id, media=None):
+    def get_userdata_date_modified(self: 'API', date, parent_id, media=None):
         return self.users("/Items", params={
             'ParentId': parent_id,
             'Recursive': True,
@@ -516,12 +668,12 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
-    def get_userdata_for_item(self, item_id):
+    def get_userdata_for_item(self: 'API', item_id):
         return self._get(
             f"UserItems/{item_id}/UserData", params={"UserId": "{UserId}"}
         )
 
-    def update_userdata_for_item(self, item_id, data):
+    def update_userdata_for_item(self: 'API', item_id, data):
         """
         Updates the userdata for an item.
 
@@ -539,7 +691,7 @@ class GranularAPIMixin:
         return self._post(f"UserItems/{item_id}/UserData", params={"UserId": "{UserId}"}, json=data)
 
 
-    def refresh_item(self, item_id, recursive=True, image_refresh='FullRefresh', metadata_refresh='FullRefresh', replace_images=False, replace_metadata=True, preset=None):
+    def refresh_item(self: 'API', item_id, recursive=True, image_refresh='FullRefresh', metadata_refresh='FullRefresh', replace_images=False, replace_metadata=True, preset=None):
         """
         Description:
 
@@ -597,13 +749,13 @@ class GranularAPIMixin:
             # If item_id is a single string, just refresh that item
             return self.items("/%s/Refresh" % item_id, "POST", params=params)
 
-    def favorite(self, item_id, option=True):
+    def favorite(self: 'API', item_id, option=True):
         return self.users("/FavoriteItems/%s" % item_id, "POST" if option else "DELETE")
 
-    def get_system_info(self):
+    def get_system_info(self: 'API'):
         return self._get("System/Configuration")
 
-    def get_server_logs(self):
+    def get_server_logs(self: 'API'):
         """
         Returns:
             List[Dict] - list of information about available log files
@@ -613,7 +765,7 @@ class GranularAPIMixin:
         """
         return self._get("System/Logs")
 
-    def get_log_entries(self, startIndex=None, limit=None, minDate=None, hasUserId=None):
+    def get_log_entries(self: 'API', startIndex=None, limit=None, minDate=None, hasUserId=None):
         """
         Returns a list of recent log entries
 
@@ -631,28 +783,28 @@ class GranularAPIMixin:
             params['hasUserId'] = hasUserId
         return self._get("System/ActivityLog/Entries", params=params)
 
-    def post_capabilities(self, data):
+    def post_capabilities(self: 'API', data):
         return self.sessions("/Capabilities/Full", "POST", json=data)
 
-    def session_add_user(self, session_id, user_id, option=True):
+    def session_add_user(self: 'API', session_id, user_id, option=True):
         return self.sessions("/%s/Users/%s" % (session_id, user_id), "POST" if option else "DELETE")
 
-    def session_playing(self, data):
+    def session_playing(self: 'API', data):
         return self.sessions("/Playing", "POST", json=data)
 
-    def session_progress(self, data):
+    def session_progress(self: 'API', data):
         return self.sessions("/Playing/Progress", "POST", json=data)
 
-    def session_stop(self, data):
+    def session_stop(self: 'API', data):
         return self.sessions("/Playing/Stopped", "POST", json=data)
 
-    def remote_pause(self, id):
+    def remote_pause(self: 'API', id):
         return self.remote(id, "Pause")
 
-    def remote_playpause(self, id):
+    def remote_playpause(self: 'API', id):
         return self.remote(id, "PlayPause")
 
-    def remote_seek(self, id, ticks, params={}, json={}):
+    def remote_seek(self: 'API', id, ticks, params={}, json={}):
         """
         Seek to a specific position in the specified session.
 
@@ -664,14 +816,14 @@ class GranularAPIMixin:
             id, "Seek", params={"seekPositionTicks": ticks, **params}, json=json
         )
 
-    def remote_stop(self, id):
+    def remote_stop(self: 'API', id):
         return self.remote(id, "Stop")
 
-    def remote_unpause(self, id):
+    def remote_unpause(self: 'API', id):
         return self.remote(id, "Unpause")
 
     def remote_play_media(
-        self, id: str, item_ids: List[str], command: str = "PlayNow", params={}, json={}
+        self: 'API', id: str, item_ids: List[str], command: str = "PlayNow", params={}, json={}
     ):
         """Instruct the session to play some media
 
@@ -687,7 +839,7 @@ class GranularAPIMixin:
             params={"playCommand": command, "itemIds": item_ids, **params},
         )
 
-    def remote_set_volume(self, id: str, volume: int, json={}):
+    def remote_set_volume(self: 'API', id: str, volume: int, json={}):
         """
         Set the volume on the sessions.
 
@@ -697,28 +849,28 @@ class GranularAPIMixin:
         """
         return self.command(id, "SetVolume", json={"Volume": volume, **json})
 
-    def remote_mute(self, id):
+    def remote_mute(self: 'API', id):
         return self.command(id, "Mute")
 
-    def remote_unmute(self, id):
+    def remote_unmute(self: 'API', id):
         return self.command(id, "Unmute")
 
-    def item_played(self, item_id, watched, date=None):
+    def item_played(self: 'API', item_id, watched, date=None):
         params = {}
         if watched and date is not None:
             params["datePlayed"] = date
         return self.users("/PlayedItems/%s" % item_id, "POST" if watched else "DELETE", params=params)
 
-    def get_sync_queue(self, date, filters=None):
+    def get_sync_queue(self: 'API', date, filters=None):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/{UserId}/GetItems", params={
             'LastUpdateDT': date,
             'filter': filters or None
         })
 
-    def get_server_time(self):
+    def get_server_time(self: 'API'):
         return self._get("Jellyfin.Plugin.KodiSyncQueue/GetServerDateTime")
 
-    def get_play_info(self, item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True, media_source_id=None):
+    def get_play_info(self: 'API', item_id, profile=None, aid=None, sid=None, start_time_ticks=None, is_playback=True, media_source_id=None):
         args = {
             'UserId': "{UserId}",
             'AutoOpenLiveStream': is_playback,
@@ -737,7 +889,7 @@ class GranularAPIMixin:
 
         return self.items("/%s/PlaybackInfo" % item_id, "POST", json=args)
 
-    def get_live_stream(self, item_id, play_id, token, profile):
+    def get_live_stream(self: 'API', item_id, play_id, token, profile):
         return self._post("LiveStreams/Open", json={
             'UserId': "{UserId}",
             'DeviceProfile': profile,
@@ -746,17 +898,17 @@ class GranularAPIMixin:
             'ItemId': item_id
         })
 
-    def close_live_stream(self, live_id):
+    def close_live_stream(self: 'API', live_id):
         return self._post("LiveStreams/Close", json={
             'LiveStreamId': live_id
         })
 
-    def close_transcode(self, device_id):
+    def close_transcode(self: 'API', device_id):
         return self._delete("Videos/ActiveEncodings", params={
             'DeviceId': device_id
         })
 
-    def get_audio_stream(self, dest_file, item_id, play_id, container, max_streaming_bitrate=140000000, audio_codec=None):
+    def get_audio_stream(self: 'API', dest_file, item_id, play_id, container, max_streaming_bitrate=140000000, audio_codec=None):
         self._get_stream("Audio/%s/universal" % item_id, dest_file, params={
             'UserId': "{UserId}",
             'DeviceId': "{DeviceId}",
@@ -766,10 +918,10 @@ class GranularAPIMixin:
             "MaxStreamingBitrate": max_streaming_bitrate,
         })
 
-    def get_default_headers(self):
+    def get_default_headers(self: 'API'):
         return self.client._get_default_headers(content_type="application/x-www-form-urlencoded; charset=UTF-8")
 
-    def send_request(self, url, path, method="get", timeout=None, headers=None, data=None, session=None):
+    def send_request(self: 'API', url, path, method="get", timeout=None, headers=None, data=None, session=None):
         request_method = getattr(session or requests, method.lower())
         url = "%s/%s" % (url, path)
         request_settings = {
@@ -788,7 +940,7 @@ class GranularAPIMixin:
 
         return request_method(url, **request_settings)
 
-    def login(self, server_url, username, password="", session=None):
+    def login(self: 'API', server_url, username, password="", session=None):
         path = "Users/AuthenticateByName"
         authData = {
                     "username": username,
@@ -816,7 +968,7 @@ class GranularAPIMixin:
 
         return {}
 
-    def validate_authentication_token(self, server, session=None):
+    def validate_authentication_token(self: 'API', server, session=None):
         headers = self.get_default_headers()
         comma = "," if "app.device_name" in self.config.data else ""
         headers["Authorization"] += f"{comma} Token=\"{server['AccessToken']}\""
@@ -824,11 +976,11 @@ class GranularAPIMixin:
         response = self.send_request(server['address'], "system/info", headers=headers, session=session)
         return response.json() if response.status_code == 200 else {}
 
-    def get_public_info(self, server_address, session=None):
+    def get_public_info(self: 'API', server_address, session=None):
         response = self.send_request(server_address, "system/info/public", session=session)
         return response.json() if response.status_code == 200 else {}
 
-    def check_redirect(self, server_address, session=None):
+    def check_redirect(self: 'API', server_address, session=None):
         ''' Checks if the server is redirecting traffic to a new URL and
         returns the URL the server prefers to use
         '''
@@ -842,11 +994,11 @@ class SyncPlayAPIMixin:
     Mixin class containing Jellyfin API calls related to Syncplay
     """
 
-    def _parse_precise_time(self, time):
+    def _parse_precise_time(self: 'API', time):
         # We have to remove the Z and the least significant digit.
         return datetime.strptime(time[:-2], "%Y-%m-%dT%H:%M:%S.%f")
 
-    def utc_time(self):
+    def utc_time(self: 'API'):
         # Measure time as close to the call as is possible.
         server_address = self.config.data.get("auth.server")
         session = self.client.session
@@ -866,37 +1018,37 @@ class SyncPlayAPIMixin:
             "response_received": response_received
         }
 
-    def get_sync_play(self, item_id=None):
+    def get_sync_play(self: 'API', item_id=None):
         params = {}
         if item_id is not None:
             params["FilterItemId"] = item_id
         return self._get("SyncPlay/List", params)
 
-    def join_sync_play(self, group_id):
+    def join_sync_play(self: 'API', group_id):
         return self._post("SyncPlay/Join", {
             "GroupId": group_id
         })
 
-    def leave_sync_play(self):
+    def leave_sync_play(self: 'API'):
         return self._post("SyncPlay/Leave")
 
-    def play_sync_play(self):
+    def play_sync_play(self: 'API'):
         """deprecated (<= 10.7.0)"""
         return self._post("SyncPlay/Play")
 
-    def pause_sync_play(self):
+    def pause_sync_play(self: 'API'):
         return self._post("SyncPlay/Pause")
 
-    def unpause_sync_play(self):
+    def unpause_sync_play(self: 'API'):
         """10.7.0+ only"""
         return self._post("SyncPlay/Unpause")
 
-    def seek_sync_play(self, position_ticks):
+    def seek_sync_play(self: 'API', position_ticks):
         return self._post("SyncPlay/Seek", {
             "PositionTicks": position_ticks
         })
 
-    def buffering_sync_play(self, when, position_ticks, is_playing, item_id):
+    def buffering_sync_play(self: 'API', when, position_ticks, is_playing, item_id):
         return self._post("SyncPlay/Buffering", {
             "When": when.isoformat() + "Z",
             "PositionTicks": position_ticks,
@@ -904,7 +1056,7 @@ class SyncPlayAPIMixin:
             "PlaylistItemId": item_id
         })
 
-    def ready_sync_play(self, when, position_ticks, is_playing, item_id):
+    def ready_sync_play(self: 'API', when, position_ticks, is_playing, item_id):
         """10.7.0+ only"""
         return self._post("SyncPlay/Ready", {
             "When": when.isoformat() + "Z",
@@ -913,7 +1065,7 @@ class SyncPlayAPIMixin:
             "PlaylistItemId": item_id
         })
 
-    def reset_queue_sync_play(self, queue_item_ids, position=0, position_ticks=0):
+    def reset_queue_sync_play(self: 'API', queue_item_ids, position=0, position_ticks=0):
         """10.7.0+ only"""
         return self._post("SyncPlay/SetNewQueue", {
             "PlayingQueue": queue_item_ids,
@@ -921,40 +1073,40 @@ class SyncPlayAPIMixin:
             "StartPositionTicks": position_ticks
         })
 
-    def ignore_sync_play(self, should_ignore):
+    def ignore_sync_play(self: 'API', should_ignore):
         """10.7.0+ only"""
         return self._post("SyncPlay/SetIgnoreWait", {
             "IgnoreWait": should_ignore
         })
 
-    def next_sync_play(self, item_id):
+    def next_sync_play(self: 'API', item_id):
         """10.7.0+ only"""
         return self._post("SyncPlay/NextItem", {
             "PlaylistItemId": item_id
         })
 
-    def prev_sync_play(self, item_id):
+    def prev_sync_play(self: 'API', item_id):
         """10.7.0+ only"""
         return self._post("SyncPlay/PreviousItem", {
             "PlaylistItemId": item_id
         })
 
-    def set_item_sync_play(self, item_id):
+    def set_item_sync_play(self: 'API', item_id):
         """10.7.0+ only"""
         return self._post("SyncPlay/SetPlaylistItem", {
             "PlaylistItemId": item_id
         })
 
-    def ping_sync_play(self, ping):
+    def ping_sync_play(self: 'API', ping):
         return self._post("SyncPlay/Ping", {
             "Ping": ping
         })
 
-    def new_sync_play(self):
+    def new_sync_play(self: 'API'):
         """deprecated (< 10.7.0)"""
         return self._post("SyncPlay/New")
 
-    def new_sync_play_v2(self, group_name):
+    def new_sync_play_v2(self: 'API', group_name):
         """10.7.0+ only"""
         return self._post("SyncPlay/New", {
             "GroupName": group_name
@@ -966,6 +1118,7 @@ class ExperimentalAPIMixin:
     This is a location for testing proposed additions to the API Client.
     """
 
+    @staticmethod
     def identify(client, item_id, provider_ids):
         """
         Remote search for item metadata given one or more provider id.
@@ -974,6 +1127,8 @@ class ExperimentalAPIMixin:
         [RemoveProviderSearch]_.
 
         Args:
+            client (JellyfinClient): The Jellyfin client.
+
             item_id (str): item uuid to identify and update metadata for.
 
             provider_ids (Dict):
@@ -987,7 +1142,7 @@ class ExperimentalAPIMixin:
         body = {'ProviderIds': provider_ids}
         return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
 
-    def get_now_playing(self, session_id):
+    def get_now_playing(self: 'API', session_id):
         """
         Simplified API to get now playing information for a session including the
         play state.
@@ -1046,7 +1201,7 @@ class ExperimentalAPIMixin:
 
         return image_bytes, mimetype
 
-    def set_item_image(self, item_id, image_data, image_type='Primary',
+    def set_item_image(self: 'API', item_id, image_data, image_type='Primary',
                        mimetype='auto'):
         """
         Args:
@@ -1087,10 +1242,10 @@ class ExperimentalAPIMixin:
                           data=data, headers=headers)
         return resp
 
-    def set_user_image(self, user_id, image_data, mimetype='auto'):
+    def set_user_image(self: 'API', user_id, image_data, mimetype='auto'):
         """
         Args:
-            item_id (str): user id to set the image for
+            user_id (str): user id to set the image for
 
             image_data (str | PathLike | bytes):
                 A path to an image on disk or raw bytes of an image.
@@ -1124,7 +1279,7 @@ class CollectionAPIMixin:
     Note: there does not seem to be an API endpoint for removing a collection.
     """
 
-    def get_collection_folders(self, term=None):
+    def get_collection_folders(self: 'API', term=None):
         """
         Queries for top-level default collections
 
@@ -1150,7 +1305,7 @@ class CollectionAPIMixin:
         result['Items'] = items
         return result
 
-    def get_collections(self, term=None):
+    def get_collections(self: 'API', term=None):
         """
         Queries for user-created collections
 
@@ -1169,7 +1324,7 @@ class CollectionAPIMixin:
         })
         return result
 
-    def delete_collection(self, item_id=None, name=None):
+    def delete_collection(self: 'API', item_id=None, name=None):
         """
         Delete a collection by name or ID.
 
@@ -1202,7 +1357,7 @@ class CollectionAPIMixin:
 
         return self.delete_item(item['Id'])
 
-    def new_collection(self, name, item_ids=None, parent_id=None, is_locked=False):
+    def new_collection(self: 'API', name, item_ids=None, parent_id=None, is_locked=False):
         """
         Create a new collection, or search for a collection with a given name.
 
@@ -1237,7 +1392,7 @@ class CollectionAPIMixin:
             params['ids'] = item_ids
         return self._post("Collections", json, params)
 
-    def add_collection_items(self, collection_id, item_ids):
+    def add_collection_items(self: 'API', collection_id, item_ids):
         """
         Adds items to a collection.
 
@@ -1256,7 +1411,7 @@ class CollectionAPIMixin:
         params['ids'] = ','.join(item_ids)
         return self._post(f"Collections/{collection_id}/Items", json, params)
 
-    def remove_collection_items(self, collection_id, item_ids=None):
+    def remove_collection_items(self: 'API', collection_id, item_ids=None):
         """
         Removes items from a collection.
 
@@ -1315,7 +1470,7 @@ class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
         >>> print(media_folders)
     """
 
-    def __init__(self, client, *args, **kwargs):
+    def __init__(self: 'API', client: 'HTTP', *args, **kwargs):
         """
         Args:
             client (jellyfin_apiclient_python.client.JellyfinClient): the client object
