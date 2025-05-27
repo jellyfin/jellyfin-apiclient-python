@@ -204,6 +204,9 @@ class HTTP(object):
 
     def _request(self, data):
 
+        if not self.config.data.get('auth.server'):
+            raise RuntimeError('A server must be configured. Run client.auth.connect_to_address first')
+
         if 'url' not in data:
             data['url'] = "%s/%s" % (self.config.data.get("auth.server", ""), data.pop('handler', ""))
 
