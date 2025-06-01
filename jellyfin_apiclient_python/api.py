@@ -3,11 +3,15 @@
 For API info see:
     https://api.jellyfin.org/
 """
-from typing import List
-from datetime import datetime
-import requests
 import json
 import logging
+from datetime import datetime
+from typing import List, Union, Dict
+
+import requests
+
+from jellyfin_apiclient_python.constants import HTTPAction
+from jellyfin_apiclient_python.mixins.playlists import PlaylistMixin
 
 LOG = logging.getLogger('JELLYFIN.' + __name__)
 
@@ -131,6 +135,35 @@ class BiggerAPIMixin:
             return self._delete("Library/VirtualFolders", params)
         else:
             return self._get("Library/VirtualFolders", params)
+
+    def playlists(
+            self: 'API',
+            action: HTTPAction=HTTPAction.GET,
+            path: Union[str, None] = None,
+            params: Union[Dict, None] = None,
+            json_data: Union[Dict, None] = None
+    ):
+        """
+        Sends requests to the playlist path and its children.
+        Args:
+            action: HTTP Action can be "GET", "POST", DELETE"
+            path: The path for the request.
+                Add further elements without a leading "/"
+            params: parameters in the URL
+            json_data: JSON data included in the request.
+            Only used when using POST.
+
+        Returns:
+            todo
+        """
+        path = "Playlists/" + path if path else "Playlists"
+        if action == HTTPAction.POST:
+            return self._post(path, json_data, params)
+        elif action == HTTPAction.DELETE:
+            return self._delete(path, params)
+        else:
+            return self._get(path, params)
+
 
     def physical_paths(self, params=None):
         return self._get("Library/PhysicalPaths/", params)
@@ -1277,7 +1310,7 @@ class CollectionAPIMixin:
 
 
 class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
-          SyncPlayAPIMixin, ExperimentalAPIMixin, CollectionAPIMixin):
+          SyncPlayAPIMixin, ExperimentalAPIMixin, CollectionAPIMixin, PlaylistMixin):
     """
     The Jellyfin Python API client containing all api calls to the server.
 
