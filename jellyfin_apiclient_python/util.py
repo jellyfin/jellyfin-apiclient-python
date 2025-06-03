@@ -13,6 +13,8 @@ def camel_to_snake(string: str) -> str:
 
 def try_parse_child_classes(child_classes: Dict[str, Type], key: str, value: Any) -> Any:
     """Parse child classes if they need further parsing."""
+    if not child_classes:
+        return value
     if key in child_classes:
         if isinstance(value, List):
             return [child_classes[key](item) for item in value]
