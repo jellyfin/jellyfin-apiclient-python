@@ -171,7 +171,7 @@ class PlaylistMixin:
             'ids': ids,
             'userId': user_id,
         }
-        return self.playlists(HTTPAction.POST, path=f"{playlist_id}/Items", json_data=json_data)
+        return self.playlists(HTTPAction.POST, path=f"{str(playlist_id).replace('-', '')}/Items", json_data=json_data)
 
     def playlist_remove_item(self: 'API', playlist_id: UUID, ids: List[UUID]) -> Dict:
         """
