@@ -453,8 +453,7 @@ class GranularAPIMixin:
                 }
             ]
         """
-        return self.items(params={
-            'userId': "{UserId}",
+        return self.user_items(params={
             'searchTerm': term,
             'years': year,
             'Recursive': True,
