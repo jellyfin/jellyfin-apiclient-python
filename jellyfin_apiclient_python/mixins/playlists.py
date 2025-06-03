@@ -68,10 +68,10 @@ class PlaylistMixin:
         json_data = {
             'Name': name,
             'IDs': ids,
-            'UserID': user_id if user_id else None,
-            'MediaType': media_type if media_type else None,
-            'Users': [user.__dict__() for user in users] if users else [],
-            'IsPublic': is_public,
+            **({'UserID': user_id} if user_id else {}),
+            **({'MediaType': media_type} if media_type else {}),
+            **({'Users': [user.__dict__() for user in users]} if users else {}),
+            **({'IsPublic': is_public} if is_public is not None else {}),
         }
         return UUID(self.playlists(HTTPAction.POST, json_data=json_data).get('Id'))
 
