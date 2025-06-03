@@ -3,6 +3,9 @@ from datetime import datetime
 from typing import Any, Optional, Dict, Type, get_type_hints, List
 from uuid import UUID
 
+def fix_uuid(uuid: UUID) -> str:
+    """Fix jellyfin uuid weirdness (no dashes in uuids)"""
+    return str(uuid).replace('-', '')
 
 def camel_to_snake(string: str) -> str:
     """Convert CAMEL_CASE to snake_case"""
