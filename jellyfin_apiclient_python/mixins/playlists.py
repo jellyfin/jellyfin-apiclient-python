@@ -148,16 +148,18 @@ class PlaylistMixin:
         """
         return self.playlists(HTTPAction.GET, path=f"{playlist_id}")
 
-    def playlist_add_item(self: 'API', playlist_id: UUID, user_id: UUID, ids: List[UUID]) -> Dict:
+    def playlist_add_items(self: 'API', playlist_id: UUID, ids: List[UUID], user_id: Optional[UUID] = None) -> Dict:
         """
         Adds new items to the playlist.
         Args:
             playlist_id: The playlist to modify
-            user_id: user id which triggers the modification - todo: check if this is true
             ids: elements to add.
+            user_id: user id which triggers the modification - todo: check if this is true
 
         Returns:
             204: Playlist updated.
+
+        Raises:
             401: Unauthorized
             403: Forbidden
             404: Playlist not found
@@ -166,8 +168,8 @@ class PlaylistMixin:
             .. [AddItemToPlaylist] https://api.jellyfin.org/#tag/Playlists/operation/AddItemToPlaylist
         """
         json_data = {
-            'Ids': ids,
-            'UserID': user_id,
+            'ids': ids,
+            'userId': user_id,
         }
         return self.playlists(HTTPAction.POST, path=f"{playlist_id}/Items", json_data=json_data)
 
