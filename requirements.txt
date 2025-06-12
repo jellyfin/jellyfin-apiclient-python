@@ -1,0 +1,6 @@
+requests~=2.32.3
+websocket~=0.2.1
+
+# Integration testing
+docker~=7.1.0
+tqdm~=4.67.1

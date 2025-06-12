@@ -1,0 +1,7 @@
+log
+metadata
+plugins
+*.db-shm
+*.db-wal
+data/playlists
+data/ScheduledTasks

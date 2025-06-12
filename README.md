@@ -104,4 +104,5 @@ fine, but please make sure that they have default options to prevent existing so
 also add your changes to the **Changes from Jellyfin Kodi** section.
 
 If you would like to produce documentation for this API, I would also be interested in accepting pull requests
-for documentation.
+for documentation. 
+Inline documentation is provided in the `google` style.
