@@ -110,6 +110,10 @@ class HTTP(object):
         retry = data.pop('retry', 5)
         stream = dest_file is not None
 
+        server_id = None
+        if 'auth.server-id' in self.config.data:
+            server_id = self.config.data['auth.server-id']
+
         while True:
 
             try:
@@ -135,7 +139,8 @@ class HTTP(object):
                     continue
 
                 LOG.error(error)
-                self.client.callback("ServerUnreachable", {'ServerId': self.config.data['auth.server-id']})
+                if server_id is not None:
+                    self.client.callback("ServerUnreachable", {'ServerId': server_id})
 
                 raise HTTPException("ServerUnreachable", error)
 
@@ -157,11 +162,13 @@ class HTTP(object):
                 if r.status_code == 401:
 
                     if 'X-Application-Error-Code' in r.headers:
-                        self.client.callback("AccessRestricted", {'ServerId': self.config.data['auth.server-id']})
+                        if server_id is not None:
+                            self.client.callback("AccessRestricted", {'ServerId': server_id})
 
                         raise HTTPException("AccessRestricted", error)
                     else:
-                        self.client.callback("Unauthorized", {'ServerId': self.config.data['auth.server-id']})
+                        if server_id is not None:
+                            self.client.callback("Unauthorized", {'ServerId': server_id})
                         self.client.auth.revoke_token()
 
                         raise HTTPException("Unauthorized", error)
@@ -207,7 +214,11 @@ class HTTP(object):
         if 'url' not in data:
             data['url'] = "%s/%s" % (self.config.data.get("auth.server", ""), data.pop('handler', ""))
 
-        data['headers'] = self._get_default_headers()
+        headers = self._get_default_headers()
+        user_specified_headers = (data.get('headers', None) or {})
+        headers.update(user_specified_headers)
+
+        data['headers'] = headers
         data['timeout'] = data.get('timeout') or self.config.data['http.timeout']
         data['verify'] = data.get('verify') or self.config.data.get('auth.ssl', False)
         data['url'] = self._replace_user_info(data['url'])
@@ -217,6 +228,9 @@ class HTTP(object):
         return data
 
     def _process_params(self, params):
+        if isinstance(params, str):
+            # Json is being used as data
+            return
 
         for key in params:
             value = params[key]

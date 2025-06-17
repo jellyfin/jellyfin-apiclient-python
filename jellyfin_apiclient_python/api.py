@@ -67,8 +67,9 @@ class InternalAPIMixin:
     def _get_url(self, handler, params=None):
         return self._http_url("GET", handler, {"params": params})
 
-    def _post(self, handler, json=None, params=None):
-        return self._http("POST", handler, {'params': params, 'json': json})
+    def _post(self, handler, json=None, params=None, data=None, headers=None):
+        return self._http("POST", handler, {'params': params, 'json': json,
+                                            'data': data, 'headers': headers})
 
     def _delete(self, handler, params=None):
         return self._http("DELETE", handler, {'params': params})
@@ -172,9 +173,9 @@ class BiggerAPIMixin:
         }
         return self.virtual_folders('POST', params=params)
 
-    def items(self, handler="", action="GET", params=None, json=None):
+    def items(self, handler="", action="GET", params=None, json=None, data=None, headers=None):
         if action == "POST":
-            return self._post("Items%s" % handler, json, params)
+            return self._post("Items%s" % handler, json, params, data, headers)
         elif action == "DELETE":
             return self._delete("Items%s" % handler, params)
         else:
@@ -1014,6 +1015,109 @@ class ExperimentalAPIMixin:
         now_playing['PlayState'] = play_state
         return now_playing
 
+    @staticmethod
+    def _coerce_image_bytes(image_data) -> bytes:
+        """
+        Transform data into a common b64 representation with associated mime
+        type
+        """
+        import os
+        import base64
+        import mimetypes
+
+        image_bytes = None
+
+        # It doesn't seem to matter which image mimetype we choose
+        mimetype = 'image/jpeg'
+
+        if isinstance(image_data, (str, os.PathLike)):
+            file_path = image_data
+
+            mimetype, encoding = mimetypes.guess_type(file_path)
+
+            with open(file_path, 'rb') as f:
+                raw_data = f.read()
+                img_bytes1 = base64.b64encode(raw_data)
+
+            image_bytes = img_bytes1
+        elif isinstance(image_data, bytes):
+            image_bytes = image_data
+
+        if image_bytes is None:
+            raise Exception("unable to construct image bytes")
+
+        return image_bytes, mimetype
+
+    def set_item_image(self, item_id, image_data, image_type='Primary',
+                       mimetype='auto'):
+        """
+        Args:
+            item_id (str): item to set the image of
+
+            image_data (str | PathLike | bytes):
+                A path to an image on disk or raw bytes of an image.
+
+            image_type (str): A valid image type. I.e. one of
+                'Primary', 'Art', 'Backdrop', 'Banner', 'Logo', 'Thumb',
+                'Disc', 'Box', 'Screenshot', 'Menu', 'Chapter', 'BoxRear',
+                'Profile'.
+
+            mimetype (str): if "auto", attempt to infer the mimetype.
+                falls back to image/jpeg if unable. Otherwise this is used.
+
+        References:
+            .. [SetItemImageByIndex] https://api.jellyfin.org/#tag/Image/operation/SetItemImageByIndex
+        """
+        from jellyfin_apiclient_python.constants import ImageType
+
+        image_bytes, auto_mimetype = self._coerce_image_bytes(image_data)
+
+        if mimetype == 'auto':
+            mimetype = auto_mimetype
+
+        if image_type not in ImageType:
+            raise KeyError(f'image_type must be one of: {ImageType}')
+
+        data = image_bytes.decode()
+
+        # Overriding headers are important for this call
+        headers = {
+            'Accept': '*/*',
+            'Content-type': mimetype,
+        }
+        resp = self.items(f'/{item_id}/Images/{image_type}', action='POST',
+                          data=data, headers=headers)
+        return resp
+
+    def set_user_image(self, user_id, image_data, mimetype='auto'):
+        """
+        Args:
+            item_id (str): user id to set the image for
+
+            image_data (str | PathLike | bytes):
+                A path to an image on disk or raw bytes of an image.
+
+            mimetype (str): if "auto", attempt to infer the mimetype.
+                falls back to image/jpeg if unable. Otherwise this is used.
+
+        References:
+            .. [PostUserImage] https://api.jellyfin.org/#tag/Image/operation/PostUserImage
+        """
+        image_bytes, auto_mimetype = self._coerce_image_bytes(image_data)
+
+        if mimetype == 'auto':
+            mimetype = auto_mimetype
+
+        data = image_bytes.decode()
+        # Overriding headers are important for this call
+        headers = {
+            'Accept': '*/*',
+            'Content-type': mimetype,
+        }
+        resp = self._post("/UserImage", params={'user_id': user_id}, data=data,
+                          headers=headers)
+        return resp
+
 
 class CollectionAPIMixin:
     """
@@ -1021,6 +1125,84 @@ class CollectionAPIMixin:
 
     Note: there does not seem to be an API endpoint for removing a collection.
     """
+
+    def get_collection_folders(self, term=None):
+        """
+        Queries for top-level default collections
+
+        I.e. Movies, Music, Shows, Collections, Playlists, etc...
+
+        Returns:
+            Dict: pagenated result with key "Items"
+        """
+        from jellyfin_apiclient_python.constants import ItemType
+        # For whatever reason, including search term in the query does nothing.
+        # Furthermore, recursive has to base False, and the basic Music,
+        # Collections, Movies, Playlists folders are always returned.
+        result = self.user_items(params={
+            'recursive': False,
+            # 'searchTerm': term,
+            'includeItemTypes': [ItemType.COLLECTION_FOLDER],
+        })
+        items = result['Items']
+        if term is not None:
+            # manual filter
+            name_lower = term.lower()
+            items = [item for item in items if name_lower in item['Name'].lower()]
+        result['Items'] = items
+        return result
+
+    def get_collections(self, term=None):
+        """
+        Queries for user-created collections
+
+        Args:
+            term (str): query string to match
+
+        Returns:
+            Dict: pagenated result with key "Items"
+        """
+        # note: pagenation not yet implemented
+        from jellyfin_apiclient_python.constants import ItemType
+        result = self.user_items(params={
+            'recursive': True,
+            'searchTerm': term,
+            'includeItemTypes': [ItemType.BOX_SET],
+        })
+        return result
+
+    def delete_collection(self, item_id=None, name=None):
+        """
+        Delete a collection by name or ID.
+
+        This is mostly a wraper around delete_item, but with additional safety
+        checks that ensure the item you are deleting is a collection.
+        """
+        if bool(name) ^ bool(item_id):
+            raise ValueError('Exactly one of item_id or name must be given')
+
+        results = self.user_items(params={'searchTerm': name, 'recursive': True})
+        items = results['Items']
+
+        if name is not None:
+            # Filter to a case insensitive exact name match
+            lower_name = name.lower()
+            items = [item for item in items if item['Name'].lower() == lower_name]
+
+        if len(items) == 0:
+            raise Exception('No items matched the given input')
+        assert len(items) == 1, 'filtered to length 0 or 1'
+        item = items[0]
+
+        # It looks like what the UI calls collections are called box sets in
+        # the backend.  there is a collection type, but these seem to be for
+        # special groups like Music / Movies that should likely not be deleted.
+        collection_types = {'BoxSet'}
+
+        if item['Type'] not in collection_types:
+            raise ValueError('Given item={item} is not a collection')
+
+        return self.delete_item(item['Id'])
 
     def new_collection(self, name, item_ids=None, parent_id=None, is_locked=False):
         """
