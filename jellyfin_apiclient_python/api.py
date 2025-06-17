@@ -965,7 +965,7 @@ class ExperimentalAPIMixin:
     This is a location for testing proposed additions to the API Client.
     """
 
-    def identify(client, item_id, provider_ids):
+    def identify(self, item_id, provider_ids):
         """
         Remote search for item metadata given one or more provider id.
 
@@ -984,7 +984,9 @@ class ExperimentalAPIMixin:
             .. [RemoveProviderSearch] https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
         """
         body = {'ProviderIds': provider_ids}
-        return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+        return self.items(
+            "/RemoteSearch/Apply/" + item_id, action="POST", params=None, json=body
+        )
 
     def get_now_playing(self, session_id):
         """
