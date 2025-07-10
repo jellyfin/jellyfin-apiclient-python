@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Type, TypeVar, Generic
 from uuid import UUID
+from datetime import datetime
 
 from jellyfin_apiclient_python.constants import MediaType, ImageType, ItemType
 from jellyfin_apiclient_python.util import api_parse_constructor
@@ -33,6 +34,7 @@ class MediaUserData:
     played: Optional[bool] = None
     key: Optional[str] = None
     item_id: Optional[str] = None
+    last_played_date: Optional[datetime] = None
 
 @dataclass
 class URLMap:

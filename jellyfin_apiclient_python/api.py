@@ -154,7 +154,7 @@ class BiggerAPIMixin:
             Only used when using POST.
 
         Returns:
-            todo
+            Return value depends on the actual request. Might be Dict, None, ...
         """
         path = "Playlists/" + path if path else "Playlists"
         if action == HTTPAction.POST:

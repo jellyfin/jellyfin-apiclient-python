@@ -7,6 +7,7 @@ from uuid import UUID
 
 from ..constants import MediaType, HTTPAction, ItemFields, ImageType
 from ..types import ListResponse, MediaItemData
+from ..util import fix_uuid
 
 if TYPE_CHECKING:
     from ..api import API
@@ -68,10 +69,10 @@ class PlaylistMixin:
         json_data = {
             'Name': name,
             'IDs': ids,
-            'UserID': user_id if user_id else None,
-            'MediaType': media_type if media_type else None,
-            'Users': [user.__dict__() for user in users] if users else [],
-            'IsPublic': is_public,
+            **({'UserID': user_id} if user_id else {}),
+            **({'MediaType': media_type} if media_type else {}),
+            **({'Users': [user.__dict__() for user in users]} if users else {}),
+            **({'IsPublic': is_public} if is_public is not None else {}),
         }
         return UUID(self.playlists(HTTPAction.POST, json_data=json_data).get('Id'))
 
@@ -91,7 +92,7 @@ class PlaylistMixin:
             No documentation found...
 
         """
-        return self.items(f"/{playlist_id}", HTTPAction.DELETE.value)
+        return self.items(f"/{fix_uuid(playlist_id)}", HTTPAction.DELETE.value)
 
     def playlist_update(self: 'API', playlist_id = UUID, name: Optional[str] = None,
                         ids: Optional[List[UUID]] = None,
@@ -120,6 +121,8 @@ class PlaylistMixin:
         References:
             .. [UpdatePlaylist] https://api.jellyfin.org/#tag/Playlists/operation/UpdatePlaylist
         """
+        ids = [fix_uuid(idx) for idx in ids]
+
         json_data = {
             **({'Name': name} if name is not None else {}),
             **({'IDs': ids} if ids is not None else {}),
@@ -128,7 +131,7 @@ class PlaylistMixin:
             **({'IsPublic': is_public} if is_public is not None else {})
         }
 
-        return self.playlists(HTTPAction.POST, path=f"{playlist_id}", json_data=json_data if json_data != {} else None)
+        return self.playlists(HTTPAction.POST, path=f"{fix_uuid(playlist_id)}", json_data=json_data if json_data != {} else None)
 
 
     def playlist_get(self: 'API', playlist_id: UUID):
@@ -146,18 +149,20 @@ class PlaylistMixin:
         References:
             .. [GetPlaylist] https://api.jellyfin.org/#tag/Playlists/operation/GetPlaylist
         """
-        return self.playlists(HTTPAction.GET, path=f"{playlist_id}")
+        return self.playlists(HTTPAction.GET, path=f"{fix_uuid(playlist_id)}")
 
-    def playlist_add_item(self: 'API', playlist_id: UUID, user_id: UUID, ids: List[UUID]) -> Dict:
+    def playlist_add_items(self: 'API', playlist_id: UUID, ids: List[UUID], user_id: Optional[UUID] = None) -> Dict:
         """
         Adds new items to the playlist.
         Args:
             playlist_id: The playlist to modify
-            user_id: user id which triggers the modification - todo: check if this is true
             ids: elements to add.
+            user_id: user id which triggers the modification - todo: check if this is true
 
         Returns:
             204: Playlist updated.
+
+        Raises:
             401: Unauthorized
             403: Forbidden
             404: Playlist not found
@@ -166,10 +171,10 @@ class PlaylistMixin:
             .. [AddItemToPlaylist] https://api.jellyfin.org/#tag/Playlists/operation/AddItemToPlaylist
         """
         json_data = {
-            'Ids': ids,
-            'UserID': user_id,
+            'ids': ids,
+            'userId': user_id,
         }
-        return self.playlists(HTTPAction.POST, path=f"{playlist_id}/Items", json_data=json_data)
+        return self.playlists(HTTPAction.POST, path=f"{fix_uuid(playlist_id)}/Items", json_data=json_data)
 
     def playlist_remove_item(self: 'API', playlist_id: UUID, ids: List[UUID]) -> Dict:
         """
@@ -190,7 +195,7 @@ class PlaylistMixin:
         json_data = {
             'EntryIds': ids  # yes. This does not match the others. Check the doc :(
         }
-        return self.playlists(HTTPAction.DELETE, path=f"{playlist_id}/Items", json_data=json_data)
+        return self.playlists(HTTPAction.DELETE, path=f"{fix_uuid(playlist_id)}/Items", json_data=json_data)
 
     def playlist_get_items(
             self: 'API', playlist_id: UUID,
@@ -236,7 +241,7 @@ class PlaylistMixin:
                                          enable_image_types])} if enable_image_types is not None else {})
         }
 
-        return ListResponse[MediaItemData](self.playlists(HTTPAction.GET, path=f"{playlist_id}/Items", json_data=json_data), MediaItemData)
+        return ListResponse[MediaItemData](self.playlists(HTTPAction.GET, path=f"{fix_uuid(playlist_id)}/Items", json_data=json_data), MediaItemData)
 
 
     def playlist_move_item(self: 'API', playlist_id: UUID, item_id: UUID, new_index: int):
@@ -256,7 +261,7 @@ class PlaylistMixin:
         References:
             .. [MoveItem] https://api.jellyfin.org/#tag/Playlists/operation/MoveItem
         """
-        return self.playlists(HTTPAction.POST, path=f"{playlist_id}/Items/{item_id}/Move/{new_index}")
+        return self.playlists(HTTPAction.POST, path=f"{fix_uuid(playlist_id)}/Items/{fix_uuid(item_id)}/Move/{new_index}")
 
 
     def playlist_get_user_permissions(self: 'API', playlist_id: UUID) -> List[PlaylistUserPermissions]:
@@ -275,7 +280,7 @@ class PlaylistMixin:
         References:
             .. [GetPlaylistUsers] https://api.jellyfin.org/#tag/Playlists/operation/GetPlaylistUsers
         """
-        return self.playlists(HTTPAction.GET, path=f"{playlist_id}/Users")
+        return self.playlists(HTTPAction.GET, path=f"{fix_uuid(playlist_id)}/Users")
 
     def playlist_get_single_user_permission(self: 'API', playlist_id: UUID, user_id: UUID) -> PlaylistUserPermissions:
         """
@@ -294,7 +299,7 @@ class PlaylistMixin:
         References:
             .. [GetPlaylistUser] https://api.jellyfin.org/#tag/Playlists/operation/GetPlaylistUser
         """
-        return self.playlists(HTTPAction.GET, path=f"{playlist_id}/Users/{user_id}")
+        return self.playlists(HTTPAction.GET, path=f"{fix_uuid(playlist_id)}/Users/{fix_uuid(user_id)}")
 
     def playlist_update_user_permission(self: 'API', playlist_id: UUID, user_id: UUID, can_edit: bool) -> None:
         """
@@ -318,7 +323,7 @@ class PlaylistMixin:
         json_data = {
             'CanEdit': can_edit
         }
-        return self.playlists(HTTPAction.POST, path=f"{playlist_id}/Users/{user_id}", json_data=json_data)
+        return self.playlists(HTTPAction.POST, path=f"{fix_uuid(playlist_id)}/Users/{fix_uuid(user_id)}", json_data=json_data)
 
     def playlist_remove_user_permission(self: 'API', playlist_id: UUID, user_id: UUID):
         """
@@ -338,4 +343,4 @@ class PlaylistMixin:
         References:
             .. [RemoveUserFromPlaylist] https://api.jellyfin.org/#tag/Playlists/operation/RemoveUserFromPlaylist
         """
-
+        return self.playlists(HTTPAction.DELETE, path=f"{fix_uuid(playlist_id)}/Users/{fix_uuid(user_id)}")
