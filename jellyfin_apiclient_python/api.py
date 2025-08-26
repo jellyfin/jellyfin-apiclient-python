@@ -601,6 +601,9 @@ class GranularAPIMixin:
         return self.users("/FavoriteItems/%s" % item_id, "POST" if option else "DELETE")
 
     def get_system_info(self):
+        return self._get("System/Info")
+
+    def get_system_configuration(self):
         return self._get("System/Configuration")
 
     def get_server_logs(self):
