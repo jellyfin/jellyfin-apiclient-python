@@ -68,7 +68,7 @@ class HTTP(object):
             if self.config.data.get('auth.user_id', None):
                 string = string.replace("{UserId}", self.config.data['auth.user_id'])
             else:
-                 LOG.debug("UserId is not set.")
+                LOG.debug("UserId is not set.")
                 raise ValueError("UserId is not set. If using API_KEY, some endpoint require a user context.")
 
         if '{DeviceId}'in string:
