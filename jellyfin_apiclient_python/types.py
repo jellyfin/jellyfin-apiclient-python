@@ -29,6 +29,7 @@ class MediaUserData:
 
     unplayed_item_count: Optional[int] = None
     playback_position_ticks: Optional[int] = None
+    played_percentage: Optional[float] = None
     play_count: Optional[int] = None
     is_favorite: Optional[bool] = None
     played: Optional[bool] = None
