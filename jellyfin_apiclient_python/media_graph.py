@@ -431,7 +431,7 @@ class MediaGraph:
 
             if item['Type'] == 'Folder':
                 color = 'blue'
-            if item['Type'] == 'CollectionFolder':
+            elif item['Type'] == 'CollectionFolder':
                 color = 'blue'
             elif item['Type'] == 'Series':
                 color = 'cyan'
