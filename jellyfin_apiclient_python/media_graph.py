@@ -286,6 +286,8 @@ class MediaGraph:
         if pman is not None:
             folder_prog = pman.progiter(desc=f'Walking {item["Name"]}')
             folder_prog.start()
+        else:
+            folder_prog = None
 
         type_add_blocklist = {
             'UserView',
@@ -388,10 +390,12 @@ class MediaGraph:
                 need_more = offset < children['TotalRecordCount']
 
                 if timer.toc() > 1.9:
-                    pman.update_info(ub.urepr(stats))
+                    if pman is not None:
+                        pman.update_info(ub.urepr(stats))
                     timer.tic()
 
-        folder_prog.stop()
+        if folder_prog is not None:
+            folder_prog.stop()
 
     def _update_graph_labels(self, sources=None):
         """
