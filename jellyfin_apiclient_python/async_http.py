@@ -103,6 +103,10 @@ class AsyncHTTP:
         retry = data.pop('retry', 5)
         stream = dest_file is not None
 
+        server_id = None
+        if 'auth.server-id' in self.config.data:
+            server_id = self.config.data['auth.server-id']
+
         while True:
             try:
                 method = data.pop('type', "GET")
@@ -129,7 +133,8 @@ class AsyncHTTP:
                     continue
 
                 LOG.error(error)
-                self.client.callback("ServerUnreachable", {'ServerId': self.config.data['auth.server-id']})
+                if server_id is not None:
+                    self.client.callback("ServerUnreachable", {'ServerId': server_id})
 
                 raise HTTPException("ServerUnreachable", error)
 
@@ -148,10 +153,12 @@ class AsyncHTTP:
 
                 if status_code == 401:
                     if 'X-Application-Error-Code' in error.response.headers:
-                        self.client.callback("AccessRestricted", {'ServerId': self.config.data['auth.server-id']})
+                        if server_id is not None:
+                            self.client.callback("AccessRestricted", {'ServerId': server_id})
                         raise HTTPException("AccessRestricted", error)
 
-                    self.client.callback("Unauthorized", {'ServerId': self.config.data['auth.server-id']})
+                    if server_id is not None:
+                        self.client.callback("Unauthorized", {'ServerId': server_id})
                     if hasattr(self.client, "auth"):
                         self.client.auth.revoke_token()
                     raise HTTPException("Unauthorized", error)
