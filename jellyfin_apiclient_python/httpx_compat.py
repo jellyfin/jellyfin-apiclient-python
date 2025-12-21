@@ -124,6 +124,10 @@ else:
             return await self.request("DELETE", url, **kwargs)
 
         def _sync_request(self, method, url, **kwargs):
+            if "verify" not in kwargs and self._verify is not None:
+                kwargs["verify"] = self._verify
+            if "cert" not in kwargs and self._cert is not None:
+                kwargs["cert"] = self._cert
             try:
                 response = requests.request(method, url, **kwargs)
                 elapsed = type("Elapsed", (), {"total_seconds": lambda self: response.elapsed.total_seconds()})()

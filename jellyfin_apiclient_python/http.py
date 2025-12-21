@@ -47,3 +47,9 @@ class HTTP:
         return self._runner.run(
             self._async_http.request(data, session=session, dest_file=dest_file)
         )
+
+    def _get_authenication_header(self):
+        return self._async_http._get_authenication_header()
+
+    def _get_default_headers(self, content_type="application/json"):
+        return self._async_http._get_default_headers(content_type=content_type)

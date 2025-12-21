@@ -197,6 +197,7 @@ class AsyncHTTP:
         return await self._requests(active_session, action, stream=stream, **kwargs)
 
     async def _requests(self, session, action, stream=False, **kwargs):
+        kwargs.pop("verify", None)
         if stream:
             kwargs["stream"] = True
         if action == "GET":

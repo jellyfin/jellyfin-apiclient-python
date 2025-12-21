@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import logging
 import threading
 
 
@@ -19,6 +20,8 @@ class AsyncRunner:
         self._closed = False
         self._thread_id = None
         self._start_loop_thread()
+
+        self._log = logging.getLogger("Jellyfin.AsyncRunner")
 
     @property
     def thread_id(self):
@@ -64,7 +67,11 @@ class AsyncRunner:
         if self._closed:
             raise RuntimeError("AsyncRunner is closed.")
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
-        return future.result()
+        try:
+            return future.result()
+        except Exception:
+            self._log.exception("Async task failed in AsyncRunner.")
+            raise
 
     def close(self):
         if self._closed:
