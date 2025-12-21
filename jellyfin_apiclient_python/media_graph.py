@@ -97,6 +97,7 @@ class MediaGraph:
             'include_collection_types': None,
             'exclude_collection_types': None,
             'perquery_limit': 200,
+            'query_attempts': 1,
         }
         self.display_config = {
             'show_path': False,
@@ -104,6 +105,12 @@ class MediaGraph:
         self._cwd = None
         self._cwd_children = None
         self._media_root_nodes = None
+        self._DEBUG = False
+
+        from jellyfin_apiclient_python.api import info
+        # NOTE: It might not be a great idea to collect all fields by default
+        # Things like CumulativeRunTimeTicks might require aggregation
+        self.fields = info()
 
     @classmethod
     def ensure_demo_server(cls, reset=False):
@@ -193,6 +200,8 @@ class MediaGraph:
 
     def _init_media_folders(self):
         # Initialize Graph
+        if self._DEBUG:
+            print('Initializing, clearing existing DiGraph')
         client = self.client
         graph = nx.DiGraph()
         self.graph = graph
@@ -213,8 +222,11 @@ class MediaGraph:
 
         pman = progiter.ProgressManager()
         with pman:
-
+            if self._DEBUG:
+                print('Query top level media folder')
             media_folders = client.jellyfin.get_media_folders(fields=['Path'])
+            if self._DEBUG:
+                print('... top level query complete, scan top level folders')
             items = []
             for folder in pman.progiter(media_folders['Items'], desc='Media Folders'):
                 collection_type = folder.get('CollectionType', None)
@@ -250,8 +262,11 @@ class MediaGraph:
                 items.append(item)
                 graph.add_node(item['Id'], item=item, properties=dict(expanded=False))
 
+            if self._DEBUG:
+                print('... top level scan complete, starting media folder walk.')
             for item in pman.progiter(items, desc='Walk Media Folders'):
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
+
 
     def open_node(self, node, verbose=0, max_depth=1):
         """
@@ -305,9 +320,6 @@ class MediaGraph:
             item: dict
             depth: int
 
-        from jellyfin_apiclient_python.api import info
-        fields = info()
-
         stack = [StackFrame(item, 0)]
         while stack:
             if pman is not None:
@@ -347,7 +359,7 @@ class MediaGraph:
                             stats['edge_types']['SpecialFeatures', special['Type']] += 1
                             if special['Id'] in graph.nodes:
                                 stats['nondag_edge_types'][(parent['Type'], special['Type'])] += 1
-                                assert False
+                                assert False, 'should not happen'
                             else:
                                 # Add child to graph
                                 graph.add_node(special['Id'], item=special, properties=dict(expanded=False))
@@ -358,16 +370,21 @@ class MediaGraph:
             perquery_limit = self.walk_config['perquery_limit']
             offset = 0
             need_more = True
+
+            fields = self.fields
+
             while need_more:
                 # Query API for children (todo: we want to async this)
-                children = client.jellyfin.user_items(params={
-                    'ParentId': parent_id,
-                    'Recursive': False,
-                    'fields': fields,
-                    'limit': perquery_limit,
-                    'startIndex': offset,
-                })
+                children = self._safe_user_items(
+                    parent=parent,
+                    offset=offset,
+                    perquery_limit=perquery_limit,
+                    fields=fields,
+                    attempts=self.walk_config['query_attempts'],
+                    verbose=False,
+                )
 
+                # Given the returned children,
                 if children and 'Items' in children:
                     stats['total'] += len(children['Items'])
                     for child in children['Items']:
@@ -387,15 +404,64 @@ class MediaGraph:
                                     stack.append(child_frame)
 
                 offset += len(children['Items'])
-                need_more = offset < children['TotalRecordCount']
+                total_record_count = children['TotalRecordCount']
+                need_more = offset < total_record_count
 
-                if timer.toc() > 1.9:
+                if timer.toc() > 1.1:
                     if pman is not None:
                         pman.update_info(ub.urepr(stats))
                     timer.tic()
 
         if folder_prog is not None:
             folder_prog.stop()
+
+    def _safe_user_items(self, *, parent, offset, perquery_limit, fields, attempts=1, base_sleep=0.5, verbose=False):
+        """
+        Returns children dict, or None if it repeatedly fails.
+        """
+        import traceback
+        import time
+        client = self.client
+        parent_id = parent['Id']
+        parent_name = parent.get('Name', '<no-name>')
+        parent_path = parent.get('Path', None)
+        total_record_count = parent.get('TotalRecordCount', None)
+
+        if self._DEBUG:
+            print(f'Issue query {parent_id=} {offset=} {total_record_count=}: {parent_name=}')
+
+        last_err = None
+        for attempt in range(1, attempts + 1):
+            try:
+                children = client.jellyfin.user_items(params={
+                    'ParentId': parent_id,
+                    'Recursive': False,
+                    'fields': fields,
+                    'limit': perquery_limit,
+                    'startIndex': offset,
+                })
+            except Exception as err:
+                last_err = err  # NOQA
+                # High-signal debug line (includes where you were)
+                print(
+                    f'[MediaGraph] user_items failed (attempt {attempt}/{attempts}) '
+                    f'parent={parent_name!r} id={parent_id} path={parent_path!r} '
+                    f'offset={offset} limit={perquery_limit} err={type(err).__name__}: {err}'
+                )
+                if verbose:
+                    traceback.print_exc()
+
+                # Exponential-ish backoff
+                time.sleep(base_sleep * (2 ** (attempt - 1)))
+            else:
+                if self._DEBUG:
+                    total_record_count = children['TotalRecordCount']
+                    if offset + perquery_limit < total_record_count:
+                        print(f'...Got result {total_record_count=}')
+                return children
+
+        raise Exception(f'[MediaGraph] giving up on parent={parent_name!r} id={parent_id} after {attempts} attempts')
+        # return None
 
     def _update_graph_labels(self, sources=None):
         """
@@ -415,7 +481,6 @@ class MediaGraph:
 
         url = self.client.http.config.data['auth.server']
 
-        nx.dfs_successors
         graph = self.graph
 
         reachable_nodes = reachable(graph, sources)
@@ -524,9 +589,10 @@ class MediaGraph:
         for node in nodes:
             node_data = graph.nodes[node]
             item = node_data['item']
+            name = item['Name']
             # TODO: allow multiple types of patterns (i.e. similar to
             # kwutil.Pattern) to abstract regex, glob, and raw string matching.
-            if pattern in item['Name']:
+            if pattern in name:
                 if data:
                     yield node, node_data
                 else:
