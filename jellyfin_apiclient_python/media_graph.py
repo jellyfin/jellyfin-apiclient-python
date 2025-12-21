@@ -126,7 +126,7 @@ class MediaGraph:
         """
         from jellyfin_apiclient_python.demo.demo_jellyfin_server import DemoJellyfinServerManager
         demoman = DemoJellyfinServerManager()
-        demoman.ensure_server(reset=False)
+        demoman.ensure_server(reset=reset)
 
     @classmethod
     def demo_client(cls):
@@ -186,6 +186,7 @@ class MediaGraph:
 
     def __truediv__(self, node):
         self.open_node(node, verbose=1)
+        return self
 
     def setup(self):
         """
@@ -266,7 +267,6 @@ class MediaGraph:
                 print('... top level scan complete, starting media folder walk.')
             for item in pman.progiter(items, desc='Walk Media Folders'):
                 self._walk_node(item, pman, stats, max_depth=initial_depth)
-
 
     def open_node(self, node, verbose=0, max_depth=1):
         """
