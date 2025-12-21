@@ -598,6 +598,36 @@ class MediaGraph:
                 else:
                     yield node
 
+    def find_one(self, pattern, data=False, root=None):
+        """
+        Find exactly one item matching a pattern.
+
+        Args:
+            pattern (str): text to find in the media name.
+            data (bool): if True, also return the data dict.
+            root (str | None): if specified search from this location,
+                if unspecified the cwd is used.
+
+        Returns:
+            str | Tuple[str, dict]:
+                the unique matching item.
+
+        Raises:
+            KeyError:
+                if no items match or if multiple items match.
+        """
+        matches = list(self.find(pattern, data=data, root=root))
+
+        if not matches:
+            raise KeyError(f'find_one({pattern!r}) found no matches')
+
+        if len(matches) > 1:
+            raise KeyError(
+                f'find_one({pattern!r}) found {len(matches)} matches, expected exactly one'
+            )
+
+        return matches[0]
+
 
 def reachable(graph, sources=None):
     if sources is None:
