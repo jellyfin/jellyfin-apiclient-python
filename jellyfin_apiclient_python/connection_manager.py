@@ -14,7 +14,6 @@ import urllib3
 
 from .credentials import Credentials
 from .api import API
-from .http import HTTP
 import traceback
 
 #################################################################################################
@@ -40,7 +39,7 @@ class ConnectionManager(object):
         self.client = client
         self.config = client.config
         self.credentials = Credentials()
-        self.API = API(HTTP(client))
+        self.API = API(client.http)
 
         self.session = None
 

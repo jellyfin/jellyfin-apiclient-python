@@ -59,7 +59,7 @@ class InternalAPIMixin:
     def _http_stream(self, action, url, dest_file, request={}):
         request.update({'type': action, 'handler': url})
 
-        self.client.request(request, dest_file=dest_file)
+        return self.client.request(request, dest_file=dest_file)
 
     def _get(self, handler, params=None):
         return self._http("GET", handler, {'params': params})
@@ -75,7 +75,7 @@ class InternalAPIMixin:
         return self._http("DELETE", handler, {'params': params})
 
     def _get_stream(self, handler, dest_file, params=None):
-        self._http_stream("GET", handler, dest_file, {'params': params})
+        return self._http_stream("GET", handler, dest_file, {'params': params})
 
 
 class BiggerAPIMixin:

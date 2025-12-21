@@ -68,6 +68,61 @@ client.jellyfin.search_media_items(
     term="And Now for Something Completely Different", media="Videos")
 ```
 
+### Async usage
+
+The synchronous API remains unchanged. You can access the async API via
+`client.aio`, which exposes async versions of the same Jellyfin API calls:
+
+```
+import asyncio
+from jellyfin_apiclient_python import JellyfinClient
+
+client = JellyfinClient()
+client.config.app('your_brilliant_app', '0.0.1', 'machine_name', 'unique_id')
+client.config.data["auth.ssl"] = True
+
+# Authenticate synchronously, then switch to async API for calls.
+client.auth.connect_to_address('server_url')
+client.auth.login('server_url', 'username', 'password')
+
+async def main():
+    system_info = await client.aio.jellyfin.get_system_info()
+    print(system_info)
+
+asyncio.run(main())
+client.close()
+```
+
+You can also use `AsyncJellyfinClient` directly if you already have a token:
+
+```
+import asyncio
+from jellyfin_apiclient_python import AsyncJellyfinClient
+
+async def main():
+    client = AsyncJellyfinClient()
+    client.config.data["auth.server"] = "https://example.com"
+    client.config.data["auth.token"] = "your_token"
+    async with client:
+        system_info = await client.jellyfin.get_system_info()
+        print(system_info)
+
+asyncio.run(main())
+```
+
+### Closing clients
+
+Use `client.close()` for sync clients and `await client.aclose()` for async
+clients. Both classes support context management:
+
+```
+with JellyfinClient() as client:
+    ...
+
+async with AsyncJellyfinClient() as client:
+    ...
+```
+
 For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
 
 ## Running the tests
