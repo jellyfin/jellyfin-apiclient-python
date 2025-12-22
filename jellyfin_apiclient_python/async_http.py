@@ -211,7 +211,10 @@ class AsyncHTTP:
     async def _requests(self, session, action, stream=False, **kwargs):
         kwargs.pop("verify", None)
         if stream:
-            kwargs["stream"] = True
+            try:
+                return await session.request(action, **kwargs, stream=True)
+            except TypeError:
+                return await session.request(action, **kwargs)
         if action == "GET":
             return await session.get(**kwargs)
         if action == "POST":
