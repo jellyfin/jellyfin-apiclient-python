@@ -187,9 +187,14 @@ class AsyncHTTP:
                     if stream:
                         return
                     self.config.data['server-time'] = response.headers['Date']
-                    elapsed = int(response.elapsed.total_seconds() * 1000)
+                    elapsed_ms = None
+                    if hasattr(response, "_elapsed"):
+                        elapsed_ms = int(response.elapsed.total_seconds() * 1000)
                     response_json = response.json()
-                    LOG.debug("---<[ http ][%s ms]", elapsed)
+                    if elapsed_ms is not None:
+                        LOG.debug("---<[ http ][%s ms]", elapsed_ms)
+                    else:
+                        LOG.debug("---<[ http ]")
                     LOG.debug(json.dumps(response_json, indent=4))
 
                     return response_json
