@@ -10,6 +10,11 @@ from .client import JellyfinClient, AsyncJellyfinClient
 
 __version__ = '1.11.0'
 
+__all__ = [
+    "AsyncJellyfinClient",
+    "JellyfinClient",
+]
+
 
 class NullHandler(logging.Handler):
     def emit(self, record):
