@@ -7,6 +7,7 @@ from .async_runner import AsyncRunner
 
 #################################################################################################
 
+
 class HTTP:
     """
     Synchronous HTTP adapter that delegates to AsyncHTTP via AsyncRunner.

@@ -18,6 +18,9 @@ class AsyncAPI:
     Methods are exposed as async callables and route to AsyncHTTP.request,
     while a small subset of request helpers are reimplemented to avoid
     blocking on synchronous requests.
+
+    Future work should investigate making this async version the primary
+    implementation and have the sync API be the wrapper.
     """
 
     def __init__(self, http):
@@ -128,6 +131,9 @@ class AsyncAPI:
         return self._api.get_default_headers()
 
     def __getattr__(self, name):
+        """
+        Forward the requests to the sync API
+        """
         attr = getattr(self._api, name)
         if callable(attr):
             async def wrapper(*args, **kwargs):
