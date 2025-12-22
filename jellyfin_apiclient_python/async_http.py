@@ -67,13 +67,13 @@ class AsyncHTTP:
             else:
                 LOG.debug("Server address not set")
 
-        if '{UserId}'in string:
+        if '{UserId}' in string:
             if self.config.data.get('auth.user_id', None):
                 string = string.replace("{UserId}", self.config.data['auth.user_id'])
             else:
                 LOG.debug("UserId is not set.")
 
-        if '{DeviceId}'in string:
+        if '{DeviceId}' in string:
             if self.config.data.get('app.device_id', None):
                 string = string.replace("{DeviceId}", self.config.data['app.device_id'])
             else:
@@ -95,6 +95,16 @@ class AsyncHTTP:
         return "%s?%s" % (data["url"], encoded_params)
 
     async def request(self, data, session=None, dest_file=None):
+        ''' Give a chance to retry the connection. Jellyfin sometimes can be slow to answer back
+            data dictionary can contain:
+            type: GET, POST, etc.
+            url: (optional)
+            handler: not considered when url is provided (optional)
+            params: request parameters (optional)
+            json: request body (optional)
+            headers: (optional),
+            verify: ssl certificate, True (verify using device built-in library) or False
+        '''
         if not data:
             raise AttributeError("Request cannot be empty")
 
@@ -114,10 +124,10 @@ class AsyncHTTP:
                 try:
                     if stream:
                         async for chunk in response.aiter_bytes(chunk_size=8192):
-                            if chunk:
+                            if chunk:   # filter out keep-alive new chunks
                                 dest_file.write(chunk)
                     else:
-                        await response.aread()
+                        await response.aread()  # release the connection
 
                     if not self.keep_alive and self.session is not None:
                         await self.stop_session()
@@ -243,6 +253,7 @@ class AsyncHTTP:
 
     def _process_params(self, params):
         if isinstance(params, str):
+            # Json is being used as data
             return
 
         for key in params:
