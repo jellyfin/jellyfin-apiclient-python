@@ -70,6 +70,12 @@ client.jellyfin.search_media_items(
 
 For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.
 
+## New OpenAPI client
+
+This repository now contains scaffolding for an OpenAPI-driven client that
+exposes async and sync wrappers. See the usage guide at
+`docs/source/manual/new_openapi_client_docs.rst` for examples.
+
 ## Running the tests
 
 The test suite is run via `tox`, and you can install it from PyPi.

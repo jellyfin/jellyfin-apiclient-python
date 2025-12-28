@@ -1,0 +1,41 @@
+from enum import Enum
+
+
+class SessionMessageType(str, Enum):
+    ACTIVITYLOGENTRY = "ActivityLogEntry"
+    ACTIVITYLOGENTRYSTART = "ActivityLogEntryStart"
+    ACTIVITYLOGENTRYSTOP = "ActivityLogEntryStop"
+    FORCEKEEPALIVE = "ForceKeepAlive"
+    GENERALCOMMAND = "GeneralCommand"
+    KEEPALIVE = "KeepAlive"
+    LIBRARYCHANGED = "LibraryChanged"
+    PACKAGEINSTALLATIONCANCELLED = "PackageInstallationCancelled"
+    PACKAGEINSTALLATIONCOMPLETED = "PackageInstallationCompleted"
+    PACKAGEINSTALLATIONFAILED = "PackageInstallationFailed"
+    PACKAGEINSTALLING = "PackageInstalling"
+    PACKAGEUNINSTALLED = "PackageUninstalled"
+    PLAY = "Play"
+    PLAYSTATE = "Playstate"
+    REFRESHPROGRESS = "RefreshProgress"
+    RESTARTREQUIRED = "RestartRequired"
+    SCHEDULEDTASKENDED = "ScheduledTaskEnded"
+    SCHEDULEDTASKSINFO = "ScheduledTasksInfo"
+    SCHEDULEDTASKSINFOSTART = "ScheduledTasksInfoStart"
+    SCHEDULEDTASKSINFOSTOP = "ScheduledTasksInfoStop"
+    SERIESTIMERCANCELLED = "SeriesTimerCancelled"
+    SERIESTIMERCREATED = "SeriesTimerCreated"
+    SERVERRESTARTING = "ServerRestarting"
+    SERVERSHUTTINGDOWN = "ServerShuttingDown"
+    SESSIONS = "Sessions"
+    SESSIONSSTART = "SessionsStart"
+    SESSIONSSTOP = "SessionsStop"
+    SYNCPLAYCOMMAND = "SyncPlayCommand"
+    SYNCPLAYGROUPUPDATE = "SyncPlayGroupUpdate"
+    TIMERCANCELLED = "TimerCancelled"
+    TIMERCREATED = "TimerCreated"
+    USERDATACHANGED = "UserDataChanged"
+    USERDELETED = "UserDeleted"
+    USERUPDATED = "UserUpdated"
+
+    def __str__(self) -> str:
+        return str(self.value)
