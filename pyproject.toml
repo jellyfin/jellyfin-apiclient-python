@@ -21,6 +21,9 @@ dependencies=[
     'urllib3',
     'websocket_client',
     'certifi'
+    'attrs',
+    'python-dateutil'
+    'httpx'
 ]
 
 [project.urls]

@@ -17,11 +17,11 @@ openapi-python-client generate \
 
 # Checks
 python -c "if 1:
-    from jellyfin_openapi.client import AuthenticatedClient
-    from jellyfin_openapi.models import AuthenticateUserByName
+    from jellyfin_apiclient_python.openapi._generated.client import AuthenticatedClient
+    from jellyfin_apiclient_python.openapi._generated.models import AuthenticateUserByName
 
     # auth = AuthenticateUserByName(username='jellyfin', pw='')
-    from jellyfin_openapi import Client, AuthenticatedClient
-    from jellyfin_openapi.api.user import authenticate_user_by_name
-    from jellyfin_openapi.models import AuthenticateUserByName
+    from jellyfin_apiclient_python.openapi._generated import Client, AuthenticatedClient
+    from jellyfin_apiclient_python.openapi._generated.api.user import authenticate_user_by_name
+    from jellyfin_apiclient_python.openapi._generated.models import AuthenticateUserByName
 "
