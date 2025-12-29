@@ -30,9 +30,7 @@ Create a client and login
        base_url="http://127.0.1.1:8096",
        username="your-username",
        password="your-password",
-   )
-
-   jf.login()  # password is used for this call; it is not persisted on the instance
+   ).login()
 
    print("UserId:", jf.user_id)
 
@@ -63,95 +61,67 @@ For example:
 .. code-block:: python
 
    # "system" group
-   ping = jf.api.system.get_ping_system()
-   print(ping.status_code)
+   sysinfo = jf.api.system.get_system_info()
+   print(sysinfo.parsed.to_dict())
 
    # "user_library" and "items" group
    root_resp = jf.api.user_library.get_root_folder(user_id=jf.user_id)
    item_resp = jf.api.items.get_items(parent_id=root_resp.parsed.id)
 
-   items = item_resp.parsed.items
-   for item in items:
+   item_resp = jf.api.library.get_media_folders(client=jf.client)
+   for item in item_resp.parsed.items:
        print(item.name, item.id)
+       subitem_resp = jf.api.items.get_items(parent_id=item.id, limit=10)
+       for subitem in subitem_resp.parsed.items:
+           print('    ', subitem.name, subitem.id)
+
 
 Note that in these calls we did not pass ``client=...``. The proxy layer will
 auto-populate ``client=jf.client`` when the underlying generated function
 accepts a ``client`` argument.
-
-Example: synchronous flow
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   from jellyfin_apiclient_python.openapi.client import Jellyfin
-
-   def test_new_openapi_client_sync():
-       jf = Jellyfin(
-           base_url="http://localhost:8096",
-           username="your-username",
-           password="your-password",
-       )
-
-       jf.login()   # or auto-login on first call
-
-       jf2 = Jellyfin(base_url="http://localhost:8096")
-       jf2.login_with_token(token=jf.token)
-       jf2.api.system.get_system_info()
-       jf2.api.user.get_current_user.sync_detailed()
-
-       print(jf.api.system.get_system_info().parsed.to_dict())
-
-       resp = jf.api.library.get_media_folders()
-       print(resp.parsed.to_dict())
-       for item in resp.parsed.items:
-           print(item.name, item.id)
-           subitem_resp = jf.api.items.get_items(parent_id=item.id, limit=10)
-           for subitem in subitem_resp.parsed.items:
-               print('    ', subitem.name, subitem.id)
 
 Example: async flow
 ^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   import asyncio
-   from jellyfin_apiclient_python.openapi.client import Jellyfin
+    import asyncio
 
-   def test_new_openapi_client_async():
-       jf = Jellyfin(
-           base_url="http://localhost:8096",
-           username="your-username",
-           password="your-password",
-       )
-       jf.login()
+    async def query(limit: int = 10):
+        # System info
+        sysinfo = await jf.api.system.get_system_info.asyncio_detailed()
+        print(sysinfo.parsed.to_dict())
 
-       async def query(limit: int = 10):
-           # System info
-           sysinfo = await jf.api.system.get_system_info.asyncio_detailed()
-           assert sysinfo.status_code == 200
-           print(sysinfo.parsed.to_dict())
+        # Root folder
+        root_resp = await jf.api.user_library.get_root_folder.asyncio_detailed(
+            user_id=jf.user_id
+        )
+        root_id = root_resp.parsed.id
 
-           # Media folders
-           folders_resp = await jf.api.library.get_media_folders.asyncio_detailed(client=jf.client)
-           assert folders_resp.status_code == 200
-           folders = folders_resp.parsed.items
+        # Items under root
+        item_resp = await jf.api.items.get_items.asyncio_detailed(parent_id=root_id)
+        items = item_resp.parsed.items
 
-           # Use a helper function to remember the folder with its results.
-           async def fetch(folder):
-               resp = await jf.api.items.get_items.asyncio_detailed(parent_id=folder.id, limit=limit)
-               return folder, resp
+        # Helper: keep the item with its result
+        async def fetch(item):
+            resp = await jf.api.items.get_items.asyncio_detailed(
+                parent_id=item.id,
+                limit=limit,
+            )
+            return item, resp
 
-           tasks = [asyncio.create_task(fetch(f)) for f in folders]
+        tasks = [asyncio.create_task(fetch(item)) for item in items]
 
-           for aw in asyncio.as_completed(tasks):
-               folder, resp = await aw
-               assert resp.status_code == 200
+        # Print results as they come back
+        for aw in asyncio.as_completed(tasks):
+            item, resp = await aw
 
-               print(f"\n{folder.name} ({folder.id}):")
-               for item in resp.parsed.items:
-                   print("    ", item.name, item.id)
+            print(f"\n{item.name} ({item.id}):")
+            for subitem in resp.parsed.items:
+                print("    ", subitem.name, subitem.id)
 
-       asyncio.run(query())
+    asyncio.run(query())
+
 
 Introspection (REPL friendly)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -172,7 +142,7 @@ The dynamic API is designed to be discoverable:
 Using the Generated Client Directly (No Convenience Layer)
 ----------------------------------------------------------
 
-If you prefer explicit control, you can use the generated client directly.
+If you prefer explicit control, you can use the OpenAPI generated client directly.
 
 The Jellyfin server expects *two* authentication-related headers that you must provide:
 
@@ -236,12 +206,22 @@ Jellyfin expects the token to be sent using ``X-Emby-Token`` with *no* prefix.
        headers=headers,           # keep identity header too
    )
 
+
+Every endpoint in the convenience wrapper of the form
+``jf.api.<group>.<endpoint>`` exists as a autogenerated module in
+``jellyfin_apiclient_python.openapi._generated.api.<group>.<endpoint>``
+
+
 Now call any endpoint:
 
 .. code-block:: python
 
     from jellyfin_apiclient_python.openapi._generated.api.user_library import get_root_folder
     from jellyfin_apiclient_python.openapi._generated.api.items import get_items
+    from jellyfin_apiclient_python.openapi._generated.api.system import get_system_info
+
+    sysinfo = get_system_info.sync_detailed(client=authed)
+    print(sysinfo.parsed.to_dict())
 
     root_resp = get_root_folder.sync_detailed(client=authed, user_id=user_id)
 
@@ -249,3 +229,57 @@ Now call any endpoint:
     items = item_resp.parsed.items
     for item in items:
         print(item.name, item.id)
+        subitem_resp = get_items.sync_detailed(client=authed, parent_id=item.id, limit=10)
+        for subitem in subitem_resp.parsed.items:
+            print('    ', subitem.name, subitem.id)
+
+
+The same code but using the asyncio API looks something like this:
+
+.. code-block:: python
+
+    import asyncio
+
+    from jellyfin_apiclient_python.openapi._generated.api.system import get_system_info
+    from jellyfin_apiclient_python.openapi._generated.api.user_library import get_root_folder
+    from jellyfin_apiclient_python.openapi._generated.api.items import get_items
+
+    async def query(limit: int = 10):
+        # System info
+        sysinfo = await get_system_info.asyncio_detailed(client=authed)
+        print(sysinfo.parsed.to_dict())
+
+        # Root folder
+        root_resp = await get_root_folder.asyncio_detailed(
+            client=authed,
+            user_id=user_id,
+        )
+        root_id = root_resp.parsed.id
+
+        # Top-level items under root
+        item_resp = await get_items.asyncio_detailed(
+            client=authed,
+            parent_id=root_id,
+        )
+        items = item_resp.parsed.items
+
+        # Fetch sub-items concurrently (same pattern as convenience async example)
+        async def fetch(item):
+            resp = await get_items.asyncio_detailed(
+                client=authed,
+                parent_id=item.id,
+                limit=limit,
+            )
+            return item, resp
+
+        tasks = [asyncio.create_task(fetch(item)) for item in items]
+
+        for aw in asyncio.as_completed(tasks):
+            item, resp = await aw
+
+            print(f"\n{item.name} ({item.id}):")
+            for subitem in resp.parsed.items:
+                print("    ", subitem.name, subitem.id)
+
+    asyncio.run(query())
+
