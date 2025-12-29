@@ -1,5 +1,6 @@
+##############################
 Jellyfin OpenAPI Python Client
-==============================
+##############################
 
 There are two ways to use it:
 
@@ -8,8 +9,9 @@ There are two ways to use it:
 
 Both approaches use the same generated code and models.
 
+*******************************************
 Using the Convenience Wrapper (Recommended)
--------------------------------------------
+*******************************************
 
 The ``jellyfin_apiclient_python.openapi.Jellyfin`` class provides:
 
@@ -19,8 +21,11 @@ The ``jellyfin_apiclient_python.openapi.Jellyfin`` class provides:
 - Automatic injection of ``client=jf.client`` into endpoint calls when omitted
 - ``login_with_token()`` for token-only mode (no ``Bearer`` prefix; uses ``X-Emby-Token``)
 
+
+For help switching from the legacy API to the generated API, we provide a `migration guide <./migration_guide.rst>`_.
+
 Create a client and login
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 .. code-block:: python
 
@@ -35,7 +40,7 @@ Create a client and login
    print("UserId:", jf.user_id)
 
 Token-only login
-^^^^^^^^^^^^^^^^
+----------------
 
 If you already have a token, you can skip the password entirely:
 
@@ -48,7 +53,7 @@ If you already have a token, you can skip the password entirely:
    jf.api.system.get_system_info()
 
 Call any generated endpoint dynamically (sync)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------
 
 All generated endpoints are mounted under ``jf.api`` as:
 
@@ -81,7 +86,7 @@ auto-populate ``client=jf.client`` when the underlying generated function
 accepts a ``client`` argument.
 
 Example: async flow
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 .. code-block:: python
 
@@ -124,7 +129,7 @@ Example: async flow
 
 
 Introspection (REPL friendly)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
 The dynamic API is designed to be discoverable:
 
@@ -139,8 +144,9 @@ The dynamic API is designed to be discoverable:
 
 
 
-Using the Generated Client Directly (No Convenience Layer)
-----------------------------------------------------------
+***********************************************************************
+Alternative: Using the Generated Client Directly (No Convenience Layer)
+***********************************************************************
 
 If you prefer explicit control, you can use the OpenAPI generated client directly.
 
@@ -152,7 +158,7 @@ The Jellyfin server expects *two* authentication-related headers that you must p
 You must also manually import the endpoints you wish to use and provide the client as an argument.
 
 Step 1: Create the identity header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
 .. code-block:: python
 
@@ -169,7 +175,7 @@ Step 1: Create the identity header
    }
 
 Step 2: Login to obtain an API token
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 .. code-block:: python
 
@@ -190,7 +196,7 @@ Step 2: Login to obtain an API token
    user_id = auth.user.id
 
 Step 3: Use ``AuthenticatedClient`` for subsequent requests
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------------------------
 
 Jellyfin expects the token to be sent using ``X-Emby-Token`` with *no* prefix.
 
