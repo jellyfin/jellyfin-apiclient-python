@@ -130,9 +130,8 @@ async def query(limit: int = 5):
 asyncio.run(query())
 ```
 
-See the usage guide at ``docs/source/manual/new_openapi_client_docs.rst`` for
-more details on introspection, token-only mode, and using the generated client
-directly.
+See the usage guide at `docs/source/manual/new_openapi_client_docs.rst` for
+more details.
 
 ## Running the tests
 
