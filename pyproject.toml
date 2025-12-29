@@ -20,9 +20,9 @@ dependencies=[
     'requests',
     'urllib3',
     'websocket_client',
-    'certifi'
+    'certifi',
     'attrs',
-    'python-dateutil'
+    'python-dateutil',
     'httpx'
 ]
 

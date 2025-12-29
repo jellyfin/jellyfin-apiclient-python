@@ -17,6 +17,7 @@ The ``jellyfin_apiclient_python.openapi.Jellyfin`` class provides:
 - A lazily-created authenticated client (``jf.client``)
 - A dynamically generated API namespace (``jf.api``)
 - Automatic injection of ``client=jf.client`` into endpoint calls when omitted
+- ``login_with_token()`` for token-only mode (no ``Bearer`` prefix; uses ``X-Emby-Token``)
 
 Create a client and login
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -31,13 +32,25 @@ Create a client and login
        password="your-password",
    )
 
-   # Explicit login (optional if auto_login=True)
-   jf.login()
+   jf.login()  # password is used for this call; it is not persisted on the instance
 
    print("UserId:", jf.user_id)
 
-Call any generated endpoint dynamically
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Token-only login
+^^^^^^^^^^^^^^^^
+
+If you already have a token, you can skip the password entirely:
+
+.. code-block:: python
+
+   jf = Jellyfin(base_url="http://127.0.1.1:8096")
+   jf.login_with_token(token="existing-token")
+
+   # user_id is only required for user-scoped endpoints. For global endpoints the token is enough.
+   jf.api.system.get_system_info()
+
+Call any generated endpoint dynamically (sync)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All generated endpoints are mounted under ``jf.api`` as:
 
@@ -65,6 +78,81 @@ Note that in these calls we did not pass ``client=...``. The proxy layer will
 auto-populate ``client=jf.client`` when the underlying generated function
 accepts a ``client`` argument.
 
+Example: synchronous flow
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from jellyfin_apiclient_python.openapi.client import Jellyfin
+
+   def test_new_openapi_client_sync():
+       jf = Jellyfin(
+           base_url="http://localhost:8096",
+           username="your-username",
+           password="your-password",
+       )
+
+       jf.login()   # or auto-login on first call
+
+       jf2 = Jellyfin(base_url="http://localhost:8096")
+       jf2.login_with_token(token=jf.token)
+       jf2.api.system.get_system_info()
+       jf2.api.user.get_current_user.sync_detailed()
+
+       print(jf.api.system.get_system_info().parsed.to_dict())
+
+       resp = jf.api.library.get_media_folders()
+       print(resp.parsed.to_dict())
+       for item in resp.parsed.items:
+           print(item.name, item.id)
+           subitem_resp = jf.api.items.get_items(parent_id=item.id, limit=10)
+           for subitem in subitem_resp.parsed.items:
+               print('    ', subitem.name, subitem.id)
+
+Example: async flow
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   import asyncio
+   from jellyfin_apiclient_python.openapi.client import Jellyfin
+
+   def test_new_openapi_client_async():
+       jf = Jellyfin(
+           base_url="http://localhost:8096",
+           username="your-username",
+           password="your-password",
+       )
+       jf.login()
+
+       async def query(limit: int = 10):
+           # System info
+           sysinfo = await jf.api.system.get_system_info.asyncio_detailed()
+           assert sysinfo.status_code == 200
+           print(sysinfo.parsed.to_dict())
+
+           # Media folders
+           folders_resp = await jf.api.library.get_media_folders.asyncio_detailed(client=jf.client)
+           assert folders_resp.status_code == 200
+           folders = folders_resp.parsed.items
+
+           # Use a helper function to remember the folder with its results.
+           async def fetch(folder):
+               resp = await jf.api.items.get_items.asyncio_detailed(parent_id=folder.id, limit=limit)
+               return folder, resp
+
+           tasks = [asyncio.create_task(fetch(f)) for f in folders]
+
+           for aw in asyncio.as_completed(tasks):
+               folder, resp = await aw
+               assert resp.status_code == 200
+
+               print(f"\n{folder.name} ({folder.id}):")
+               for item in resp.parsed.items:
+                   print("    ", item.name, item.id)
+
+       asyncio.run(query())
+
 Introspection (REPL friendly)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -77,6 +165,7 @@ The dynamic API is designed to be discoverable:
    help(jf.api.items)      # describes the namespace
    help(jf.api.items.get_items)  # describes the endpoint proxy
    help(jf.api.items.get_items.sync_detailed)  # shows signature + docs
+   # In IPython/Notebooks, the usual "?" introspection also works.
 
 
 
