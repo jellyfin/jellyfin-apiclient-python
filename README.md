@@ -88,17 +88,15 @@ jf = Jellyfin(
 )
 jf.login(password="your-password")
 
-# Token-only login (no bearer prefix; Jellyfin expects X-Emby-Token)
-jf2 = Jellyfin(base_url="http://localhost:8096")
-jf2.login_with_token(token=jf.token)
-
 # Call endpoints through the dynamic .api namespace
 system_info = jf.api.system.get_system_info()
-print(system_info.parsed.version)
+print(system_info.parsed.to_dict())
 
 folders_resp = jf.api.library.get_media_folders()
 for folder in folders_resp.parsed.items:
-    print(folder.name, folder.id)
+    resp = jf.api.items.get_items.sync_detailed(parent_id=folder.id, limit=10)
+    print(folder.name, [item.name for item in resp.parsed.items])
+
 ```
 
 ### Quick start (async)
