@@ -12,19 +12,24 @@ auto-inject ``client=jf.client`` when omitted.
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Any, Optional, Dict, Callable
-import importlib
-import pkgutil
-import inspect
 import functools
+import importlib
+import inspect
+import pkgutil
+import sys
 import textwrap
 import uuid
 
+if sys.version_info < (3, 10):
+    from jellyfin_apiclient_python.openapi.compat import install_legacy_openapi_compat
+
+    install_legacy_openapi_compat()
+
 # --- Generated imports (no jellyfin_openapi name) ---
-from ._generated.client import Client as UnauthClient
-from ._generated.client import AuthenticatedClient
+from ._generated.client import Client as UnauthClient  # noqa: E402
+from ._generated.client import AuthenticatedClient  # noqa: E402
 
 _DEFAULT = object()  # sentinel
 
@@ -149,7 +154,7 @@ class Jellyfin:
         self.api = ApiNamespace(
             "api",
             doc=_codeblock(
-                f"""
+                """
                 Jellyfin API namespace (dynamically generated).
 
                 This namespace contains endpoint groups created by crawling the generated
