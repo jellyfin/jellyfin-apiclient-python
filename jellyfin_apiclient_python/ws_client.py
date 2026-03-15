@@ -88,8 +88,9 @@ class WSClient(threading.Thread):
             else:
                 self.wsc.run_forever(ping_interval=10)
 
-            if not self.stop:
+            if self.stop:
                 break
+            LOG.warning("Websocket disconnected, reconnecting...")
 
         LOG.info("---<[ websocket ]")
         self.client.callback('WebSocketDisconnect', None)
