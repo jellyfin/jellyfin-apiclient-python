@@ -6,7 +6,7 @@ import json
 import logging
 import time
 import urllib
-import api
+from . import api
 
 import requests
 
