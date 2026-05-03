@@ -1294,8 +1294,132 @@ class CollectionAPIMixin:
         return self._delete(f"Collections/{collection_id}/Items", json, params)
 
 
-class API(InternalAPIMixin, BiggerAPIMixin, GranularAPIMixin,
-          SyncPlayAPIMixin, ExperimentalAPIMixin, CollectionAPIMixin):
+class BackupAPIMixin:
+    """
+    Methods for creating, restoring and listing system backups
+
+    10.11.0+ only
+
+    Note: backup manifests are dictionary objects with the following structure:
+
+        {
+            "ServerVersion": "string",
+            "BackupEngineVersion": "string",
+            "DateCreated": "2019-08-24T14:15:22Z",
+            "Path": "string",
+            "Options": {
+                "Metadata": true,
+                "Trickplay": true,
+                "Subtitles": true,
+                "Database": true
+            }
+        }
+
+    """
+
+    def create_backup(
+        self,
+        include_metadata: bool = False,
+        include_subtitles: bool = False,
+        include_trickplay: bool = False,
+    ):
+        """
+        Creates a new backup including the database and any of the optional
+        elements requested. If metadata is included, this can be a time-consuming
+        operation.
+
+        Args:
+            include_metadata (bool)
+                Whether or not to include metadata in the backup
+
+            include_subtitles (bool)
+                Whether or not to include subtitles in the backup
+
+            include_trickplay (bool)
+                Whether or not to include trickplay information in the backup
+
+        Returns:
+            The manifest of the backup if it was created, an empty directory
+            otherwise.
+
+        """
+        params = {
+            "database": True,
+            "metadata": include_metadata,
+            "subtitles": include_subtitles,
+            "trickplay": include_trickplay,
+        }
+        return self._post("Backup/Create", params)
+
+    def get_backup_manifest(self, path: str):
+        """
+        Gets the manifest of a backup at the path passed
+
+        Args:
+            path (str):
+                Location of the backup
+
+        Returns:
+            The backup's manifest, if the backup exists, an empty dictionary
+            otherwise.
+
+        References:
+            .. [BackupManifest] https://api.jellyfin.org/#tag/Backup/operation/GetBackup
+        """
+        params = {"path": path}
+        return self._get("Backup/Manifest", params)
+
+    def get_backups(self):
+        """
+        Gets a list of all currently present backups in the backup directory.
+
+        Args:
+            None
+
+        Returns:
+            List of manifests for the backup that exist, one per backup.
+
+        References:
+            .. [Backup] https://api.jellyfin.org/#tag/Backup/operation/ListBackups
+        """
+        return self._get("Backup")
+
+    def restore_backup(self, backup_name: str):
+        """
+        Starts the process of restoring a backup with the name passed.
+
+        Args:
+            backup_name (str)
+                The name of the backup archive, which must exist in the
+                backups directory for the restore process to start
+
+        Returns:
+            True if the restore process started, False otherwise
+
+        """
+        params = {"ArchiveFileName": backup_name}
+        try:
+            # This post call returns a 204 to indicate that the restore has
+            # been requested, but the client ingests the non-error code
+            # and the _post() call returns nothing.
+            self._post("Backup/Restore", params)
+            return True
+
+        except Exception as e:
+            LOG.error(e)
+
+        return False
+
+
+class API(
+    InternalAPIMixin,
+    BiggerAPIMixin,
+    GranularAPIMixin,
+    SyncPlayAPIMixin,
+    ExperimentalAPIMixin,
+    CollectionAPIMixin,
+    BackupAPIMixin,
+):
     """
     The Jellyfin Python API client containing all api calls to the server.
 
