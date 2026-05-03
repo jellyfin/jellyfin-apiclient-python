@@ -96,6 +96,7 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Add support for authenticating via an API key
  - Add support for the optional 'date played' parameter in the `item_played` API method
  - Add API calls `get_userdata_for_item` and `update_userdata_for_item`
+ - Extend the (currently) experimental `identify` API call to include all parameters supported by Jellyfin
 
 ## Contributing
 

@@ -966,26 +966,44 @@ class ExperimentalAPIMixin:
     This is a location for testing proposed additions to the API Client.
     """
 
-    def identify(client, item_id, provider_ids):
+    def identify(self, item_id, name=None, provider_ids=None, year=None, replaceAllImages=True):
         """
-        Remote search for item metadata given one or more provider id.
+        Applies search criteria to an item and refreshes metadata.
 
         This method requires an authenticated user with elevated permissions
-        [RemoveProviderSearch]_.
+        [RequiresElevation]_.
 
         Args:
             item_id (str): item uuid to identify and update metadata for.
 
-            provider_ids (Dict):
+            name (str):
+                name for the identified item
+            provider_ids (dict):
                 maps providers to the content id. (E.g. {"Imdb": "tt1254207"})
                 Valid keys will depend on available providers. Common ones are:
                     "Tvdb" and "Imdb".
+            year (int):
+                production year for the identified idem
+            replaceAllImages(bool):
+                whether all images should be replaced by default
 
         References:
-            .. [RemoveProviderSearch] https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
+            .. [ApplySearchCriteria] https://api.jellyfin.org/#tag/ItemLookup/operation/ApplySearchCriteria
         """
-        body = {'ProviderIds': provider_ids}
-        return client.jellyfin.items('/RemoteSearch/Apply/' + item_id, action='POST', params=None, json=body)
+
+        data = {
+            'Name': name, 
+            'ProviderIds': provider_ids, 
+            'ProductionYear': year
+        }
+        params = {
+            'replaceAllImages': replaceAllImages
+        }
+
+        return self._post(
+            f'Items/RemoteSearch/Apply/{item_id}', params=params, json=data
+        )
+
 
     def get_now_playing(self, session_id):
         """
