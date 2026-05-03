@@ -21,6 +21,10 @@ class TestBackup(TestCase):
         self.addCleanup(patcher.stop)
         self.mock_request = patcher.start()
 
+    def setup_api(self):
+        mock_client = Mock()
+        self.api = API(HTTP(mock_client))
+
     def setUp(self):
         self.setup_requests()
         self.setup_api()
