@@ -759,9 +759,10 @@ class GranularAPIMixin:
             'LiveStreamId': live_id
         })
 
-    def close_transcode(self, device_id):
+    def close_transcode(self, device_id, play_session_id):
         return self._delete("Videos/ActiveEncodings", params={
-            'DeviceId': device_id
+            'DeviceId': device_id,
+            'PlaySessionId': play_session_id,
         })
 
     def get_audio_stream(self, dest_file, item_id, play_id, container, max_streaming_bitrate=140000000, audio_codec=None):
