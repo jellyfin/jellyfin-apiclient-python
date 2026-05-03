@@ -6,7 +6,7 @@ import json
 import logging
 import time
 import urllib
-from . import api
+from .api import jellyfin_url
 
 import requests
 
@@ -213,7 +213,7 @@ class HTTP(object):
     def _request(self, data):
 
         if 'url' not in data:
-            data['url'] = api.jellyfin_url(self, data.pop('handler', ""))
+            data['url'] = jellyfin_url(self, data.pop('handler', ""))
 
         headers = self._get_default_headers()
         user_specified_headers = (data.get('headers', None) or {})
