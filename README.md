@@ -49,10 +49,15 @@ You can also authenticate using an API key, which is generated on the server.
 This is different to a device AccessToken, and is set by not configuring a
 device name, or a device id:
 
-```
+```python
 client.config.data["app.name"] = 'your_brilliant_app'
 client.config.data["app.version"] = '0.0.1'
-client.authenticate({"Servers": [{"AccessToken": <API key here>, "address": <Server Address>}]}, discover=False)
+client.authenticate({"Servers": [{"AccessToken": '<API key here>', "address": '<Server Address>'}]}, discover=False)
+
+# Some endpoint require a user context event using API Key.
+
+client.config.data["auth.user_id"] = '<UserID here>'
+client.authenticate({"Servers": [{"AccessToken": '<API key here>', "address": '<Server Address>'}]}, discover=False)
 ```
 
 ### API
@@ -63,9 +68,8 @@ are a dictionary with 3 members, "Items", "TotalRecordCount" and "StartIndex"
 The easiest way to fetch media objects is by calling `search_media_items`, like
 so:
 
-```
-client.jellyfin.search_media_items(
-    term="And Now for Something Completely Different", media="Videos")
+```python
+client.jellyfin.search_media_items(term="And Now for Something Completely Different", media="Videos")
 ```
 
 For details on what the individual API calls do or how to do a certain task, you will probably find the [Jellyfin MPV Shim](https://github.com/iwalton3/jellyfin-mpv-shim) and [Jellyfin Kodi](https://github.com/jellyfin/jellyfin-kodi) repositories useful.

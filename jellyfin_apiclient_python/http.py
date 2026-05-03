@@ -63,18 +63,21 @@ class HTTP(object):
                 string = string.replace("{server}", self.config.data['auth.server'])
             else:
                 LOG.debug("Server address not set")
+                raise ValueError("Server is not set.")
 
         if '{UserId}'in string:
             if self.config.data.get('auth.user_id', None):
                 string = string.replace("{UserId}", self.config.data['auth.user_id'])
             else:
                 LOG.debug("UserId is not set.")
+                raise ValueError("UserId is not set. If using API_KEY, some endpoint require a user context.")
 
         if '{DeviceId}'in string:
             if self.config.data.get('app.device_id', None):
                 string = string.replace("{DeviceId}", self.config.data['app.device_id'])
             else:
                 LOG.debug("DeviceId is not set.")
+                raise ValueError("DeviceId is not set.")
 
         return string
 
