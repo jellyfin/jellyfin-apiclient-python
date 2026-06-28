@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from jellyfin_apiclient_python.api import API
 from jellyfin_apiclient_python.client import JellyfinClient, Config
@@ -67,4 +68,31 @@ class TestConnectionManager(unittest.TestCase):
         self.manager.credentials.set({"Servers": [server]})
         self.manager.server_id = 4
         self.assertEqual(self.manager.jellyfin_token(), 68)
+
+    def test_login_with_quick_connect_persists_credentials(self):
+        self.manager.credentials.set({"Servers": [{"Id": "srv"}]})
+        auth_result = {
+            "AccessToken": "tok",
+            "ServerId": "srv",
+            "User": {"Id": "user-1"},
+        }
+        with patch.object(API, "login_with_quick_connect", return_value=auth_result):
+            result = self.manager.login_with_quick_connect("https://s", "secret")
+
+        self.assertEqual(result, auth_result)
+        server = self.manager.credentials.get()["Servers"][0]
+        self.assertEqual(server["AccessToken"], "tok")
+        self.assertEqual(server["UserId"], "user-1")
+        self.assertEqual(self.manager.config.data["auth.token"], "tok")
+        self.assertEqual(self.manager.config.data["auth.user_id"], "user-1")
+
+    def test_login_with_quick_connect_failure_returns_empty(self):
+        with patch.object(API, "login_with_quick_connect", return_value={}):
+            self.assertEqual(
+                self.manager.login_with_quick_connect("https://s", "secret"), {}
+            )
+
+    def test_login_with_quick_connect_requires_secret(self):
+        with self.assertRaises(AttributeError):
+            self.manager.login_with_quick_connect("https://s", "")
 

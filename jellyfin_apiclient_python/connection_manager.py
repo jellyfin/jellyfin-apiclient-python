@@ -126,6 +126,31 @@ class ConnectionManager(object):
             return {}
 
         LOG.info("Succesfully logged in as %s" % (username))
+        return self._persist_authentication(data)
+
+
+    def login_with_quick_connect(self, server_url, secret):
+
+        if not secret:
+            raise AttributeError("secret cannot be empty")
+
+        if not server_url:
+            raise AttributeError("server url cannot be empty")
+
+        data = self.API.login_with_quick_connect(server_url, secret, self.session) # returns empty dict on failure
+
+        if not data:
+            LOG.info("Failed to log in with Quick Connect")
+            return {}
+
+        LOG.info("Successfully logged in with Quick Connect")
+        return self._persist_authentication(data)
+
+
+    def _persist_authentication(self, data):
+        # Record an AuthenticationResult (from a password login or Quick
+        # Connect) in the credential store. Returns the data on success, or an
+        # empty dict if its server is not known to us.
         # TODO Change when moving to database storage of server details
         credentials = self.credentials.get()
 
@@ -149,7 +174,7 @@ class ConnectionManager(object):
             'Id': data['User']['Id'],
             'IsSignedInOffline': True
         }
-        self.credentials.add_update_user(server, info)
+        self.credentials.add_update_user(found_server, info)
 
         self.credentials.set_credentials(credentials)
 
