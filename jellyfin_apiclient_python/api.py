@@ -231,6 +231,43 @@ class BiggerAPIMixin:
         params = {}
         return self._get_url("Items/%s/Download" % item_id, params)
 
+    def image_url(self, item_id, image_type="Primary", index=None, tag=None,
+                  max_width=None, fill_width=None, fill_height=None, quality=90):
+        """Build an image URL for an item.
+
+        Pass ``fill_width``/``fill_height`` to crop to an exact box, or
+        ``max_width`` to scale within a width. ``index`` selects a numbered
+        image (e.g. ``Backdrop`` index ``0``).
+        """
+        handler = "Items/%s/Images/%s" % (item_id, image_type)
+        if index is not None:
+            handler = "%s/%s" % (handler, index)
+        params = {}
+        if quality is not None:
+            params["quality"] = quality
+        if fill_width is not None and fill_height is not None:
+            params["fillWidth"] = int(fill_width)
+            params["fillHeight"] = int(fill_height)
+        elif max_width is not None:
+            params["maxWidth"] = int(max_width)
+        if tag is not None:
+            params["tag"] = tag
+        return self._get_url(handler, params)
+
+    def subtitle_url(self, item_id, media_source_id, index, fmt, fmt_index=0):
+        """Build the external-subtitle sidecar stream URL for one stream."""
+        return self._get_url(
+            "Videos/%s/%s/Subtitles/%s/%s/Stream.%s"
+            % (item_id, media_source_id, index, fmt_index, fmt), {})
+
+    def trickplay_tile_url(self, item_id, width, index, media_source_id=None):
+        """Build the URL for a single trickplay (scrubbing preview) tile."""
+        params = {}
+        if media_source_id is not None:
+            params["MediaSourceId"] = media_source_id
+        return self._get_url(
+            "Videos/%s/Trickplay/%s/%s.jpg" % (item_id, width, index), params)
+
 
 class GranularAPIMixin:
     """
@@ -270,18 +307,20 @@ class GranularAPIMixin:
             params = {'fields': fields}
         return self.users("/Items", params=params)
 
-    def get_item(self, item_id):
+    def get_item(self, item_id, fields=None):
         """
         Lookup metadata for an item.
 
         Args:
             item_id (str): item uuid to lookup metadata for
+            fields (str): comma-separated Fields to request; defaults to the
+                standard ``info()`` field set.
 
         Returns:
             Dict[str, Any]: metadata keys and values for the queried item.
         """
         return self.users("/Items/%s" % item_id, params={
-            'Fields': info()
+            'Fields': fields if fields is not None else info()
         })
 
     def get_items(self, item_ids):
@@ -349,12 +388,20 @@ class GranularAPIMixin:
             'Fields': info()
         })
 
-    def get_next(self, index=None, limit=1):
-        return self.shows("/NextUp", {
+    def get_next(self, index=None, limit=1, series_id=None, fields=None,
+                 enable_image_types=None):
+        params = {
             'Limit': limit,
             'UserId': "{UserId}",
             'StartIndex': None if index is None else int(index)
-        })
+        }
+        if series_id is not None:
+            params['SeriesId'] = series_id
+        if fields is not None:
+            params['Fields'] = fields
+        if enable_image_types is not None:
+            params['EnableImageTypes'] = enable_image_types
+        return self.shows("/NextUp", params)
 
     def get_adjacent_episodes(self, show_id, item_id):
         return self.shows("/%s/Episodes" % show_id, {
@@ -368,6 +415,21 @@ class GranularAPIMixin:
             'UserId': "{UserId}",
             'SeasonId': season_id
         })
+
+    def get_episodes(self, series_id, season_id=None, start_item_id=None,
+                     fields=None, limit=None):
+        """Episodes for a series, optionally scoped to one season or starting
+        at a given episode (``start_item_id`` crosses season boundaries)."""
+        params = {'UserId': "{UserId}"}
+        if season_id is not None:
+            params['SeasonId'] = season_id
+        if start_item_id is not None:
+            params['StartItemId'] = start_item_id
+        if fields is not None:
+            params['Fields'] = fields
+        if limit is not None:
+            params['Limit'] = limit
+        return self.shows("/%s/Episodes" % series_id, params)
 
     def get_genres(self, parent_id=None):
         return self._get("Genres", {
