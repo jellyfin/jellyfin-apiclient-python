@@ -5,6 +5,7 @@ For API info see:
 """
 from typing import List
 from datetime import datetime
+from urllib.parse import quote
 import requests
 import json
 import logging
@@ -821,6 +822,90 @@ class GranularAPIMixin:
 
                 return {}
         except Exception as e:  # Find exceptions for likely cases i.e, server timeout, etc
+            LOG.error(e)
+
+        return {}
+
+    def quick_connect_enabled(self, server_url, session=None):
+        """Return whether Quick Connect is enabled on the server."""
+        try:
+            response = self.send_request(
+                server_url, "QuickConnect/Enabled", session=session
+            )
+            if response.status_code == 200:
+                return bool(response.json())
+            LOG.error(
+                "Failed to query Quick Connect status: " + str(response.status_code)
+            )
+        except Exception as e:
+            LOG.error(e)
+
+        return False
+
+    def quick_connect_initiate(self, server_url, session=None):
+        """Start a Quick Connect request, returning a dict with Secret and Code."""
+        headers = self.get_default_headers()
+
+        try:
+            response = self.send_request(
+                server_url, "QuickConnect/Initiate", method="post",
+                headers=headers, timeout=(5, 30), session=session
+            )
+            if response.status_code == 200:
+                return response.json()
+            LOG.error(
+                "Failed to initiate Quick Connect: " + str(response.status_code)
+            )
+        except Exception as e:
+            LOG.error(e)
+
+        return {}
+
+    def quick_connect_state(self, server_url, secret, session=None):
+        """Return the current state of a Quick Connect request as a dict.
+
+        The returned dict's ``Authenticated`` field indicates whether the user
+        has approved the request yet.
+        """
+        path = "QuickConnect/Connect?secret=" + quote(secret, safe="")
+
+        try:
+            response = self.send_request(server_url, path, session=session)
+            if response.status_code == 200:
+                return response.json()
+            LOG.error(
+                "Failed to query Quick Connect state: " + str(response.status_code)
+            )
+        except Exception as e:
+            LOG.error(e)
+
+        return {}
+
+    def login_with_quick_connect(self, server_url, secret, session=None):
+        """Exchange an authorized Quick Connect secret for an AuthenticationResult.
+
+        Returns the same payload shape as ``login()`` (AccessToken, User, ...)
+        on success, or an empty dict on failure.
+        """
+        path = "Users/AuthenticateWithQuickConnect"
+        authData = {"Secret": secret}
+
+        headers = self.get_default_headers()
+        headers.update({'Content-type': "application/json"})
+
+        try:
+            response = self.send_request(
+                server_url, path, method="post", headers=headers,
+                data=json.dumps(authData), timeout=(5, 30), session=session
+            )
+            if response.status_code == 200:
+                return response.json()
+            LOG.error(
+                "Failed to authenticate with Quick Connect, status code: "
+                + str(response.status_code)
+            )
+            LOG.error("Server Response:\n" + str(response.content))
+        except Exception as e:
             LOG.error(e)
 
         return {}
