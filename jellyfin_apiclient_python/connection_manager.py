@@ -2,9 +2,7 @@
 
 #################################################################################################
 
-import json
 import logging
-import socket
 from datetime import datetime
 from enum import Enum
 from operator import itemgetter
@@ -14,6 +12,7 @@ import urllib3
 
 from .credentials import Credentials
 from .api import API
+from .discovery import discover_servers
 from .http import HTTP
 import traceback
 
@@ -271,42 +270,7 @@ class ConnectionManager(object):
         return "%s/%s" % (base, handler)
 
     def _server_discovery(self):
-        MULTI_GROUP = ("<broadcast>", 7359)
-        MESSAGE = b"who is JellyfinServer?"
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(1.0)  # This controls the socket.timeout exception
-
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 20)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_LOOP, 1)
-        sock.setsockopt(socket.IPPROTO_IP, socket.SO_REUSEADDR, 1)
-
-        LOG.debug("MultiGroup      : %s", str(MULTI_GROUP))
-        LOG.debug("Sending UDP Data: %s", MESSAGE)
-
-        servers = []
-
-        try:
-            sock.sendto(MESSAGE, MULTI_GROUP)
-        except Exception as error:
-            LOG.exception(traceback.format_exc())
-            LOG.exception(error)
-            return servers
-
-        while True:
-            try:
-                data, addr = sock.recvfrom(1024)  # buffer size
-                servers.append(json.loads(data))
-
-            except socket.timeout:
-                LOG.info("Found Servers: %s", servers)
-                return servers
-
-            except Exception as e:
-                LOG.error(traceback.format_exc())
-                LOG.exception("Error trying to find servers: %s", e)
-                return servers
+        return discover_servers()
 
     def process_found_servers(self, found_servers):
 
