@@ -20,6 +20,18 @@ client.config.app('your_brilliant_app', '0.0.1', 'machine_name', 'unique_id')
 client.config.data["auth.ssl"] = True
 ```
 
+### Finding servers on the local network
+
+```python
+from jellyfin_apiclient_python.discovery import discover_servers
+servers = discover_servers(timeout=1.0)  # [{'Id': ..., 'Name': ..., 'Address': ...}, ...]
+```
+
+This blocks for the whole timeout, so call it off your UI thread. The replies
+are not authenticated: anything on the network can answer with any name and
+address, and a real server usually advertises plain `http://`. Show the address
+and let the user choose it rather than signing in to one automatically.
+
 ### Authenticating to a server
 
 If you do not have a token, you will need to connect via username and password:
@@ -125,6 +137,9 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Add parameters `timeout` and `retry` to `sessions`, so a health check can
    fail fast instead of waiting out the client-wide defaults
  - Add parameter `include_segment_types` to `get_media_segments`
+ - Add `discovery.discover_servers`, public server discovery with one deadline
+   for the whole wait and one entry per server; `ConnectionManager` now uses it,
+   and it closes its socket
 
 ## Contributing
 
