@@ -140,6 +140,9 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Add `discovery.discover_servers`, public server discovery with one deadline
    for the whole wait and one entry per server; `ConnectionManager` now uses it,
    and it closes its socket
+ - Add API call `get_live_tv_info` (`LiveTv/Info`), whose `EnabledUsers` is the
+   only way to tell whether Live TV is actually available to a user before
+   showing a guide or recordings view
 
 ## Contributing
 
