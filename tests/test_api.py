@@ -402,6 +402,16 @@ class TestBrowseCalls(RequestCaptureMixin, TestCase):
 
 
 class TestLiveTvCalls(RequestCaptureMixin, TestCase):
+    def test_get_live_tv_info_is_a_bare_get(self):
+        # LiveTv/Info takes no query: the server resolves the caller from the
+        # token, and the user id is only read from the EnabledUsers answer.
+        self.api.get_live_tv_info()
+
+        request = self.request()
+        assert request["type"] == "GET"
+        assert request["handler"] == "LiveTv/Info"
+        assert request["params"] is None
+
     def test_get_channels_keeps_its_no_argument_behavior(self):
         self.api.get_channels()
 

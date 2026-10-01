@@ -871,6 +871,28 @@ class GranularAPIMixin:
         return self._post("DisplayPreferences/usersettings", json=data,
                           params={"userId": "{UserId}", "client": client})
 
+    def get_live_tv_info(self):
+        """Live TV availability, per user (GET LiveTv/Info).
+
+        ``IsEnabled`` is true on every server, because the built-in DVR
+        counts as a Live TV service even with nothing behind it; ``Services``
+        is just that service's name. The field to read is ``EnabledUsers``:
+        the ids (32 hex digits, no dashes) of the users who hold the Live TV
+        permission on a server that has at least one tuner or listings
+        provider configured. Check the signed-in user against it before
+        showing a guide or a recordings view -- the channel, program and
+        timer calls answer with empty lists on a server without a tuner, so
+        they cannot tell "nothing on" from "no Live TV".
+
+        The call itself sits behind the Live TV permission: a user without
+        it gets a 403, which ``HTTP.request`` raises as ``HTTPException``
+        rather than returning.
+
+        References:
+            .. [GetLiveTvInfo] https://api.jellyfin.org/#tag/LiveTv/operation/GetLiveTvInfo
+        """
+        return self._get("LiveTv/Info")
+
     def get_channels(self, limit=None, start_index=None, fields=None,
                      enable_images=True, enable_user_data=True,
                      image_type_limit=None, enable_image_types=None,
