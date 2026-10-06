@@ -142,12 +142,14 @@ class HTTP(object):
 
         while True:
 
+            written = False
             try:
                 r = self._requests(session or self.session or requests, data.pop('type', "GET"), **data, stream=stream)
                 if stream:
                     for chunk in r.iter_content(chunk_size=8192):
                         if chunk: # filter out keep-alive new chunks
                             dest_file.write(chunk)
+                            written = True
                 else:
                     r.content  # release the connection
 
@@ -157,7 +159,7 @@ class HTTP(object):
                 r.raise_for_status()
 
             except requests.exceptions.ConnectionError as error:
-                if retry:
+                if retry and (not written or self._rewind(dest_file)):
 
                     retry -= 1
                     time.sleep(1)
@@ -171,7 +173,7 @@ class HTTP(object):
                 raise HTTPException("ServerUnreachable", error)
 
             except requests.exceptions.ReadTimeout as error:
-                if retry:
+                if retry and (not written or self._rewind(dest_file)):
 
                     retry -= 1
                     time.sleep(1)
@@ -205,7 +207,7 @@ class HTTP(object):
                     return
 
                 elif r.status_code == 502:
-                    if retry:
+                    if retry and (not written or self._rewind(dest_file)):
 
                         retry -= 1
                         time.sleep(1)
@@ -234,6 +236,21 @@ class HTTP(object):
                     return response
                 except ValueError:
                     return
+
+    @staticmethod
+    def _rewind(dest_file):
+        ''' Empty dest_file so a retry does not append a second body to the
+            first's partial one. False when it cannot be emptied: then the
+            request must not be retried.
+        '''
+        try:
+            if hasattr(dest_file, 'seekable') and not dest_file.seekable():
+                return False
+            dest_file.seek(0)
+            dest_file.truncate()
+        except (AttributeError, OSError, ValueError):
+            return False
+        return True
 
     def _request(self, data):
 
