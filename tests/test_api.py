@@ -569,3 +569,32 @@ class TestUrlTokenSpelling(TestCase):
                     api.subtitle_url("i", "s", 1, "srt"),
                     api.trickplay_tile_url("i", 320, 0)):
             assert "ApiKey=T0KEN" in url
+
+
+class TestPlayInfo(TestCase):
+    """A stream index of 0 is a real stream: the server numbers external
+    streams first, so it is the first sidecar track. The server's own
+    "nothing" is an absent field."""
+
+    def setUp(self):
+        self.api = API(HTTP(Mock()))
+        patcher = patch.object(self.api, "items", return_value={})
+        self.addCleanup(patcher.stop)
+        self.items = patcher.start()
+
+    def body(self, **kw):
+        self.api.get_play_info("1234", {}, **kw)
+        return self.items.call_args.kwargs["json"]
+
+    def test_index_zero_is_sent(self):
+        body = self.body(aid=0, sid=0)
+        assert body["AudioStreamIndex"] == 0
+        assert body["SubtitleStreamIndex"] == 0
+
+    def test_none_is_not_sent(self):
+        body = self.body()
+        assert "AudioStreamIndex" not in body
+        assert "SubtitleStreamIndex" not in body
+
+    def test_subtitles_off_is_sent(self):
+        assert self.body(sid=-1)["SubtitleStreamIndex"] == -1
