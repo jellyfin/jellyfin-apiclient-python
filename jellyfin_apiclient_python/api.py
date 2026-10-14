@@ -1577,9 +1577,11 @@ class GranularAPIMixin:
         }
         if profile is not None:
             args['DeviceProfile'] = profile
-        if sid:
+        # 0 is a real stream index (external streams are numbered first), and
+        # an absent field is how the server is told to choose for itself.
+        if sid is not None:
             args['SubtitleStreamIndex'] = sid
-        if aid:
+        if aid is not None:
             args['AudioStreamIndex'] = aid
         if start_time_ticks:
             args['StartTimeTicks'] = start_time_ticks
