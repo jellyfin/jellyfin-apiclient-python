@@ -201,6 +201,11 @@ class ConnectionManager(object):
                 return { 'State': CONNECTION_STATE['Unavailable'] }
 
             return server
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+            # A server that is switched off or not reachable yet is an
+            # expected state; the caller learns about it from the result.
+            LOG.info("connect_to_address %s: server unreachable (%s)", address, error)
+            return { 'State': CONNECTION_STATE['Unavailable'] }
         except Exception:
             LOG.error("connect_to_address %s failed", address)
             return { 'State': CONNECTION_STATE['Unavailable'] }
