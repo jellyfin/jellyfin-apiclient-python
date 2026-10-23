@@ -1,9 +1,14 @@
 import unittest
 from unittest.mock import patch
 
+import requests
+
 from jellyfin_apiclient_python.api import API
 from jellyfin_apiclient_python.client import JellyfinClient, Config
-from jellyfin_apiclient_python.connection_manager import ConnectionManager
+from jellyfin_apiclient_python.connection_manager import (
+    CONNECTION_STATE,
+    ConnectionManager,
+)
 from jellyfin_apiclient_python.credentials import Credentials
 
 
@@ -91,6 +96,30 @@ class TestConnectionManager(unittest.TestCase):
             self.assertEqual(
                 self.manager.login_with_quick_connect("https://s", "secret"), {}
             )
+
+    def test_connect_to_address_unreachable_is_not_an_error(self):
+        for error in (
+            requests.exceptions.ConnectionError("refused"),
+            requests.exceptions.ConnectTimeout("timed out"),
+        ):
+            with self.subTest(error=error):
+                with patch.object(API, "check_redirect", side_effect=error):
+                    with self.assertLogs("JELLYFIN", level="INFO") as logs:
+                        result = self.manager.connect_to_address("http://s:8096")
+
+                self.assertEqual(
+                    result, {"State": CONNECTION_STATE["Unavailable"]}
+                )
+                self.assertEqual(
+                    [record.levelname for record in logs.records], ["INFO"]
+                )
+
+    def test_connect_to_address_unexpected_error_is_logged(self):
+        with patch.object(API, "check_redirect", side_effect=ValueError("boom")):
+            with self.assertLogs("JELLYFIN", level="ERROR"):
+                result = self.manager.connect_to_address("http://s:8096")
+
+        self.assertEqual(result, {"State": CONNECTION_STATE["Unavailable"]})
 
     def test_login_with_quick_connect_requires_secret(self):
         with self.assertRaises(AttributeError):
