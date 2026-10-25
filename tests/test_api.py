@@ -401,6 +401,44 @@ class TestBrowseCalls(RequestCaptureMixin, TestCase):
         assert request["json"] == dto
 
 
+class TestPlaylistUsers(RequestCaptureMixin, TestCase):
+    def test_get_playlist_users(self):
+        self.api.get_playlist_users("pl")
+
+        request = self.request()
+        assert request["type"] == "GET"
+        assert request["handler"] == "Playlists/pl/Users"
+
+    def test_get_playlist_user(self):
+        self.api.get_playlist_user("pl", "u1")
+
+        request = self.request()
+        assert request["type"] == "GET"
+        assert request["handler"] == "Playlists/pl/Users/u1"
+
+    def test_update_playlist_user_sends_can_edit(self):
+        self.api.update_playlist_user("pl", "u1", can_edit=True)
+
+        request = self.request()
+        assert request["type"] == "POST"
+        assert request["handler"] == "Playlists/pl/Users/u1"
+        assert request["json"] == {"CanEdit": True}
+
+    def test_remove_playlist_user(self):
+        self.api.remove_playlist_user("pl", "u1")
+
+        request = self.request()
+        assert request["type"] == "DELETE"
+        assert request["handler"] == "Playlists/pl/Users/u1"
+
+    def test_get_playlist_instant_mix_asks_for_no_fields_by_default(self):
+        self.api.get_playlist_instant_mix("pl")
+
+        request = self.request()
+        assert request["handler"] == "Playlists/pl/InstantMix"
+        assert request["params"] == {"UserId": "{UserId}", "Limit": 200}
+
+
 class TestLiveTvCalls(RequestCaptureMixin, TestCase):
     def test_get_live_tv_info_is_a_bare_get(self):
         # LiveTv/Info takes no query: the server resolves the caller from the
