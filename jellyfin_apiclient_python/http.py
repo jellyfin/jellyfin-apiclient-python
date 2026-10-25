@@ -166,7 +166,9 @@ class HTTP(object):
 
                     continue
 
-                LOG.error(error)
+                # An unreachable server is an expected state; the caller
+                # gets the HTTPException and decides how loud to be.
+                LOG.info("Server unreachable: %s", error)
                 if server_id is not None:
                     self.client.callback("ServerUnreachable", {'ServerId': server_id})
 
@@ -180,7 +182,7 @@ class HTTP(object):
 
                     continue
 
-                LOG.error(error)
+                LOG.info("Read timeout: %s", error)
 
                 raise HTTPException("ReadTimeout", error)
 
