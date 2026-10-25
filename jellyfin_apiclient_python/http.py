@@ -166,9 +166,13 @@ class HTTP(object):
 
                     continue
 
-                # An unreachable server is an expected state; the caller
-                # gets the HTTPException and decides how loud to be.
-                LOG.info("Server unreachable: %s", error)
+                if isinstance(error, requests.exceptions.SSLError):
+                    # A certificate problem needs fixing, not waiting out.
+                    LOG.warning("TLS error: %s", error)
+                else:
+                    # An unreachable server is an expected state; the caller
+                    # gets the HTTPException and decides how loud to be.
+                    LOG.info("Server unreachable: %s", error)
                 if server_id is not None:
                     self.client.callback("ServerUnreachable", {'ServerId': server_id})
 

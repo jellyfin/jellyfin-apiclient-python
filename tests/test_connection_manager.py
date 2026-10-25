@@ -114,6 +114,17 @@ class TestConnectionManager(unittest.TestCase):
                     [record.levelname for record in logs.records], ["INFO"]
                 )
 
+    def test_connect_to_address_tls_error_is_a_warning(self):
+        error = requests.exceptions.SSLError("certificate verify failed")
+        with patch.object(API, "check_redirect", side_effect=error):
+            with self.assertLogs("JELLYFIN", level="INFO") as logs:
+                result = self.manager.connect_to_address("https://s:8920")
+
+        self.assertEqual(result, {"State": CONNECTION_STATE["Unavailable"]})
+        self.assertEqual(
+            [record.levelname for record in logs.records], ["WARNING"]
+        )
+
     def test_connect_to_address_unexpected_error_is_logged(self):
         with patch.object(API, "check_redirect", side_effect=ValueError("boom")):
             with self.assertLogs("JELLYFIN", level="ERROR"):

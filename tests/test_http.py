@@ -127,3 +127,17 @@ class TestUnreachableServer(TestCase):
                 self.assertEqual(
                     [record.levelname for record in logs.records], ["INFO"]
                 )
+
+    def test_tls_error_is_a_warning(self):
+        error = requests.exceptions.SSLError("certificate verify failed")
+        with self.assertLogs("Jellyfin", level="INFO") as logs:
+            with self.assertRaises(HTTPException) as raised:
+                self.http.request(
+                    {"type": "GET", "url": "https://server/x", "retry": 0},
+                    session=RaisingSession(error),
+                )
+
+        self.assertEqual(raised.exception.status, "ServerUnreachable")
+        self.assertEqual(
+            [record.levelname for record in logs.records], ["WARNING"]
+        )
