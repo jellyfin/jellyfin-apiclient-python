@@ -10,6 +10,7 @@ from jellyfin_apiclient_python.connection_manager import (
     ConnectionManager,
 )
 from jellyfin_apiclient_python.credentials import Credentials
+from jellyfin_apiclient_python.exceptions import HTTPException
 
 
 class TestConnectionManager(unittest.TestCase):
@@ -142,3 +143,26 @@ class TestConnectionManager(unittest.TestCase):
 
         self.assertEqual(state["State"], CONNECTION_STATE["SignedIn"])
         self.assertIsNone(client.config.data["auth.ssl"])
+
+    def test_http_error_callbacks_get_the_server_id_after_connect(self):
+        client = JellyfinClient()
+        client.config.data["app.name"] = "app"
+        client.config.data["app.version"] = "0.0.1"
+        client.config.data["auth.ssl"] = True
+        system_info = {"Id": "server-id", "ServerName": "s", "Version": "12.3.0"}
+
+        with patch.object(API, "get_public_info", return_value=system_info), \
+                patch.object(API, "validate_authentication_token", return_value=system_info):
+            client.authenticate(
+                {"Servers": [{"AccessToken": "api-key", "address": "http://s:8096"}]},
+                discover=False,
+            )
+
+        events = []
+        client.callback = lambda event, data: events.append((event, data))
+        with patch.object(client.http, "_requests",
+                          side_effect=requests.exceptions.ConnectionError("refused")):
+            with self.assertRaises(HTTPException):
+                client.http.request({"type": "GET", "handler": "Sessions", "retry": 0})
+
+        self.assertEqual(events, [("ServerUnreachable", {"ServerId": "server-id"})])
