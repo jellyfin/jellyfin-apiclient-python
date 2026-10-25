@@ -125,3 +125,20 @@ class TestConnectionManager(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.manager.login_with_quick_connect("https://s", "")
 
+
+    def test_api_key_without_ssl_setting_signs_in(self):
+        # README API-key example: no config.app() and no auth.ssl.
+        client = JellyfinClient()
+        client.config.data["app.name"] = "app"
+        client.config.data["app.version"] = "0.0.1"
+        system_info = {"Id": "server-id", "ServerName": "s", "Version": "10.11.8"}
+
+        with patch.object(API, "get_public_info", return_value=system_info), \
+                patch.object(API, "validate_authentication_token", return_value=system_info):
+            state = client.authenticate(
+                {"Servers": [{"AccessToken": "api-key", "address": "http://s:8096"}]},
+                discover=False,
+            )
+
+        self.assertEqual(state["State"], CONNECTION_STATE["SignedIn"])
+        self.assertIsNone(client.config.data["auth.ssl"])
