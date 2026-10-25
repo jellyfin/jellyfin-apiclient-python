@@ -10,6 +10,7 @@ from .api import jellyfin_url
 
 import requests
 
+from .configuration import tls_verify
 from .exceptions import HTTPException
 
 #################################################################################################
@@ -263,7 +264,7 @@ class HTTP(object):
 
         data['headers'] = headers
         data['timeout'] = data.get('timeout') or self.config.data['http.timeout']
-        data['verify'] = data.get('verify') or self.config.data.get('auth.ssl', False)
+        data['verify'] = data.get('verify') or tls_verify(self.config.data)
         data['url'] = self._replace_user_info(data['url'])
         self._process_params(data.get('params') or {})
         self._process_params(data.get('json') or {})

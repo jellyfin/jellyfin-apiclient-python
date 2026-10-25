@@ -17,6 +17,17 @@ LOG = logging.getLogger('JELLYFIN.' + __name__)
 #################################################################################################
 
 
+def tls_verify(data):
+    """The ``verify`` value for requests and the websocket.
+
+    Certificates are verified unless ``auth.ssl`` is explicitly ``False``,
+    against ``auth.tls_server_ca`` when it is set.
+    """
+    if data.get('auth.ssl') is False:
+        return False
+    return data.get('auth.tls_server_ca') or True
+
+
 class Config(object):
 
     def __init__(self):

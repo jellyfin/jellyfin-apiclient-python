@@ -20,6 +20,9 @@ client.config.app('your_brilliant_app', '0.0.1', 'machine_name', 'unique_id')
 client.config.data["auth.ssl"] = True
 ```
 
+Server certificates are verified unless `auth.ssl` is set to `False`, against
+`auth.tls_server_ca` when that is set and the system certificates otherwise.
+
 ### Finding servers on the local network
 
 ```python
@@ -146,6 +149,12 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Add playlist sharing API calls `get_playlist_users`, `get_playlist_user`,
    `update_playlist_user` and `remove_playlist_user`, and
    `get_playlist_instant_mix` (`Playlists/{id}/InstantMix`)
+ - Verify server certificates by default for all requests and the websocket;
+   only an explicit `auth.ssl = False` turns verification off, and
+   `auth.tls_server_ca` is used whenever it is set. Previously `HTTP.request`
+   skipped verification when `auth.ssl` was not set, the websocket unless it
+   was `True`, and `auth.tls_server_ca` only took effect together with a client
+   certificate
 
 ## Contributing
 

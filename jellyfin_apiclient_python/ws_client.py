@@ -10,6 +10,7 @@ import certifi
 
 import websocket
 
+from .configuration import tls_verify
 from .keepalive import KeepAlive
 
 ##################################################################################################
@@ -50,7 +51,7 @@ class WSClient(threading.Thread):
         server = self.client.config.data['auth.server']
         server = server.replace('https', "wss") if server.startswith('https') else server.replace('http', "ws")
         wsc_url = "%s/socket" % server
-        verify = self.client.config.data.get('auth.ssl', False)
+        verify = tls_verify(self.client.config.data)
 
         LOG.info("Websocket url: %s", wsc_url)
 
@@ -97,7 +98,8 @@ class WSClient(threading.Thread):
                         ping_interval=10, sslopt={"cert_reqs": ssl.CERT_NONE}
                     )
                 else:
-                    self.wsc.run_forever(ping_interval=10, sslopt={"context": ssl_context, "ca_certs": certifi.where()})
+                    ca_certs = verify if isinstance(verify, str) else certifi.where()
+                    self.wsc.run_forever(ping_interval=10, sslopt={"context": ssl_context, "ca_certs": ca_certs})
             else:
                 self.wsc.run_forever(ping_interval=10)
 
