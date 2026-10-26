@@ -167,7 +167,13 @@ class HTTP(object):
 
                     continue
 
-                LOG.error(error)
+                if isinstance(error, requests.exceptions.SSLError):
+                    # A certificate problem needs fixing, not waiting out.
+                    LOG.warning("TLS error: %s", error)
+                else:
+                    # An unreachable server is an expected state; the caller
+                    # gets the HTTPException and decides how loud to be.
+                    LOG.info("Server unreachable: %s", error)
                 if server_id is not None:
                     self.client.callback("ServerUnreachable", {'ServerId': server_id})
 
@@ -181,7 +187,7 @@ class HTTP(object):
 
                     continue
 
-                LOG.error(error)
+                LOG.info("Read timeout: %s", error)
 
                 raise HTTPException("ReadTimeout", error)
 

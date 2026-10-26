@@ -94,3 +94,50 @@ class TestStreamRetry(TestCase):
         self.stream(session, dest)
         self.assertEqual(session.calls, 2)
         self.assertEqual(dest.getvalue(), BODY)
+
+
+class RaisingSession:
+    def __init__(self, error):
+        self.error = error
+
+    def get(self, **kwargs):
+        raise self.error
+
+
+class TestUnreachableServer(TestCase):
+    def setUp(self):
+        client = Mock()
+        client.config.data = {"http.timeout": 5, "http.user_agent": None}
+        self.http = HTTP(client)
+
+    def test_unreachable_server_is_not_an_error(self):
+        for error, status in (
+            (requests.exceptions.ConnectionError("refused"), "ServerUnreachable"),
+            (requests.exceptions.ReadTimeout("timed out"), "ReadTimeout"),
+        ):
+            with self.subTest(error=error):
+                with self.assertLogs("Jellyfin", level="INFO") as logs:
+                    with self.assertRaises(HTTPException) as raised:
+                        self.http.request(
+                            {"type": "GET", "url": "http://server/x", "retry": 0},
+                            session=RaisingSession(error),
+                        )
+
+                self.assertEqual(raised.exception.status, status)
+                self.assertEqual(
+                    [record.levelname for record in logs.records], ["INFO"]
+                )
+
+    def test_tls_error_is_a_warning(self):
+        error = requests.exceptions.SSLError("certificate verify failed")
+        with self.assertLogs("Jellyfin", level="INFO") as logs:
+            with self.assertRaises(HTTPException) as raised:
+                self.http.request(
+                    {"type": "GET", "url": "https://server/x", "retry": 0},
+                    session=RaisingSession(error),
+                )
+
+        self.assertEqual(raised.exception.status, "ServerUnreachable")
+        self.assertEqual(
+            [record.levelname for record in logs.records], ["WARNING"]
+        )

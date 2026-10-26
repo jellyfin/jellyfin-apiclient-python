@@ -201,6 +201,11 @@ class ConnectionManager(object):
                 return { 'State': CONNECTION_STATE['Unavailable'] }
 
             return server
+        except requests.exceptions.SSLError as error:
+            # Subclass of ConnectionError, but a certificate problem needs
+            # fixing rather than waiting out, so keep it visible.
+            LOG.warning("connect_to_address %s: TLS error (%s)", address, error)
+            return { 'State': CONNECTION_STATE['Unavailable'] }
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
             # A server that is switched off or not reachable yet is an
             # expected state; the caller learns about it from the result.
