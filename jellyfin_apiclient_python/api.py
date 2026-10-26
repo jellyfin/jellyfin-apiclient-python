@@ -10,6 +10,8 @@ import requests
 import json
 import logging
 
+from .configuration import tls_verify
+
 LOG = logging.getLogger('JELLYFIN.' + __name__)
 
 
@@ -1676,9 +1678,7 @@ class GranularAPIMixin:
             "data": data
         }
 
-        # Changed to use non-Kodi specific setting.
-        if self.config.data.get('auth.ssl') is False:
-            request_settings["verify"] = False
+        request_settings["verify"] = tls_verify(self.config.data)
 
         LOG.info("Sending %s request to %s" % (method, path))
         LOG.debug(request_settings['timeout'])
