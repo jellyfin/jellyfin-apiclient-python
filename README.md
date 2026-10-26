@@ -143,6 +143,9 @@ The test suite is run via `tox`, and you can install it from PyPi.
  - Add API call `get_live_tv_info` (`LiveTv/Info`), whose `EnabledUsers` is the
    only way to tell whether Live TV is actually available to a user before
    showing a guide or recordings view
+ - Add playlist sharing API calls `get_playlist_users`, `get_playlist_user`,
+   `update_playlist_user` and `remove_playlist_user`, and
+   `get_playlist_instant_mix` (`Playlists/{id}/InstantMix`)
 
 ## Contributing
 

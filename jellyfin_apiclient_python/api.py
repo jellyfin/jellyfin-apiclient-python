@@ -2295,6 +2295,108 @@ class PlaylistAPIMixin:
         return self._post("Playlists/%s/Items/%s/Move/%s"
                           % (playlist_id, entry_id, int(new_index)))
 
+    def get_playlist_users(self, playlist_id):
+        """
+        List the users a playlist is shared with.
+
+        Args:
+            playlist_id (str):
+                Id of the playlist.
+
+        Returns:
+            List[Dict]:
+                ``PlaylistUserPermissions`` entries: ``UserId`` and
+                ``CanEdit``.
+
+        References:
+            .. [GetPlaylistUsers] https://api.jellyfin.org/#tag/Playlists/operation/GetPlaylistUsers
+        """
+        return self._get("Playlists/%s/Users" % playlist_id)
+
+    def get_playlist_user(self, playlist_id, user_id):
+        """
+        Fetch one user's permissions on a playlist.
+
+        Args:
+            playlist_id (str):
+                Id of the playlist.
+
+            user_id (str):
+                Id of the user.
+
+        Returns:
+            Dict:
+                A ``PlaylistUserPermissions`` entry: ``UserId`` and
+                ``CanEdit``.
+
+        References:
+            .. [GetPlaylistUser] https://api.jellyfin.org/#tag/Playlists/operation/GetPlaylistUser
+        """
+        return self._get("Playlists/%s/Users/%s" % (playlist_id, user_id))
+
+    def update_playlist_user(self, playlist_id, user_id, can_edit):
+        """
+        Share a playlist with a user, or change whether they can edit it.
+
+        Args:
+            playlist_id (str):
+                Id of the playlist.
+
+            user_id (str):
+                Id of the user to share with.
+
+            can_edit (bool):
+                Whether the user may change the playlist.
+
+        References:
+            .. [UpdatePlaylistUser] https://api.jellyfin.org/#tag/Playlists/operation/UpdatePlaylistUser
+        """
+        return self._post("Playlists/%s/Users/%s" % (playlist_id, user_id),
+                          {"CanEdit": bool(can_edit)})
+
+    def remove_playlist_user(self, playlist_id, user_id):
+        """
+        Stop sharing a playlist with a user.
+
+        Args:
+            playlist_id (str):
+                Id of the playlist.
+
+            user_id (str):
+                Id of the user to remove.
+
+        References:
+            .. [RemoveUserFromPlaylist] https://api.jellyfin.org/#tag/Playlists/operation/RemoveUserFromPlaylist
+        """
+        return self._delete("Playlists/%s/Users/%s" % (playlist_id, user_id))
+
+    def get_playlist_instant_mix(self, playlist_id, limit=200, fields=None):
+        """
+        A radio-style auto queue seeded from a playlist (GET
+        Playlists/{id}/InstantMix).
+
+        Args:
+            playlist_id (str):
+                Id of the playlist to seed the mix from.
+
+            limit (int | None):
+                Maximum number of items to return.
+
+            fields (str | None):
+                Extra item fields to include. None asks for none, like
+                jellyfin-web; see ``get_instant_mix`` for why a large set is
+                expensive here.
+
+        References:
+            .. [GetInstantMixFromPlaylist] https://api.jellyfin.org/#tag/InstantMix/operation/GetInstantMixFromPlaylist
+        """
+        params = {"UserId": "{UserId}"}
+        if limit is not None:
+            params["Limit"] = limit
+        if fields:
+            params["Fields"] = fields
+        return self._get("Playlists/%s/InstantMix" % playlist_id, params)
+
 
 class CollectionAPIMixin:
     """
