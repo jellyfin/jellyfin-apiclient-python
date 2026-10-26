@@ -44,20 +44,20 @@ client.auth.connect_to_address('server_url')
 client.auth.login('server_url', 'username', 'password')
 ```
 
-You can then generate a token:
+You can then save the server entry, which holds the token:
 
 ```
 credentials = client.auth.credentials.get_credentials()
 server = credentials["Servers"][0]
 server["username"] = 'username'
-json.dumps(server)
+saved = json.dumps(server)
 ```
 
 And if you wish then use that token to authenticate in future:
 
 ```
-json.loads(credentials)
-client.authenticate({"Servers": [credentials]}, discover=False)
+server = json.loads(saved)
+client.authenticate({"Servers": [server]}, discover=False)
 ```
 
 You can also authenticate using an API key, which is generated on the server.
