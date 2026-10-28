@@ -20,7 +20,7 @@ dependencies=[
     'requests',
     'urllib3',
     'websocket_client',
-    'certifi'
+    'certifi>=2026.10.19'
 ]
 
 [project.urls]
