@@ -3,3 +3,6 @@ dist
 build
 jellyfin_apiclient_python.egg-info
 .tox
+
+# Local symlink to STARTHERE.md for tools that look for this name.
+CLAUDE.md
