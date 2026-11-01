@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Start Here
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+The developer entry point for this repository, for anyone working on the code.
 
 ## Project
 
