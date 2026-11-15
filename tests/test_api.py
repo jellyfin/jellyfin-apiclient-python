@@ -609,6 +609,23 @@ class TestUrlTokenSpelling(TestCase):
             assert "ApiKey=T0KEN" in url
 
 
+class TestAudioUrl(TestCase):
+    _api = TestUrlTokenSpelling._api
+
+    def test_transcoding_options_are_sent(self):
+        url = self._api().audio_url("i", container="flac",
+                                    audio_codec="aac",
+                                    transcoding_container="aac")
+        assert "Container=flac" in url
+        assert "AudioCodec=aac" in url
+        assert "TranscodingContainer=aac" in url
+
+    def test_unset_transcoding_options_are_not_sent(self):
+        url = self._api().audio_url("i")
+        assert "Container" not in url
+        assert "AudioCodec" not in url
+
+
 class TestPlayInfo(TestCase):
     """A stream index of 0 is a real stream: the server numbers external
     streams first, so it is the first sidecar track. The server's own

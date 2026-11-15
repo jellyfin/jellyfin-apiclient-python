@@ -239,7 +239,17 @@ class BiggerAPIMixin:
                              include_apikey=include_apikey)
 
     def audio_url(self, item_id, container=None, audio_codec=None,
-                  max_streaming_bitrate=140000000, include_apikey=True):
+                  max_streaming_bitrate=140000000, include_apikey=True,
+                  transcoding_container=None):
+        """Build a URL for the universal audio endpoint.
+
+        ``container`` lists the containers the player can take directly
+        (comma separated); without it the server always transcodes.
+        ``audio_codec`` is the codec to transcode to and
+        ``transcoding_container`` the container to put it in. The server
+        defaults the latter to mp3, which cannot hold most other codecs,
+        so pass both together (e.g. aac/aac, vorbis/ogg, wmav2/asf).
+        """
         params = {
             "UserId": "{UserId}",
             "DeviceId": "{DeviceId}",
@@ -251,6 +261,9 @@ class BiggerAPIMixin:
 
         if audio_codec:
             params["AudioCodec"] = audio_codec
+
+        if transcoding_container:
+            params["TranscodingContainer"] = transcoding_container
 
         return self._get_url("Audio/%s/universal" % item_id, params,
                              include_apikey=include_apikey)
