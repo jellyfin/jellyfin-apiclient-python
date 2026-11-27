@@ -10,7 +10,7 @@ from .api import jellyfin_url
 
 import requests
 
-from .configuration import tls_verify
+from .configuration import authorization_header, tls_verify
 from .exceptions import HTTPException
 
 #################################################################################################
@@ -292,18 +292,7 @@ class HTTP(object):
                 params[key] = self._replace_user_info(value)
 
     def _get_authenication_header(self):
-        params = {}
-        if "app.device_name" in self.config.data:
-            params.update({
-                "Client": self.config.data['app.name'],
-                "Device": self.config.data['app.device_name'],
-                "DeviceId": self.config.data['app.device_id'],
-                "Version": self.config.data['app.version']
-                })
-        if "auth.token" in self.config.data:
-            params["Token"] = self.config.data['auth.token']
-        param_line = ", ".join(f'{k}="{v}"' for k, v in params.items())
-        return f"MediaBrowser {param_line}"
+        return authorization_header(self.config.data)
 
     def _get_default_headers(self, content_type="application/json"):
         app_name = f"{self.config.data.get('app.name', 'Jellyfin for Kodi')}/{self.config.data.get('app.version', '0.0.0')}"

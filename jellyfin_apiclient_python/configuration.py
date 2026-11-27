@@ -7,6 +7,7 @@
 #################################################################################################
 
 import logging
+from urllib.parse import quote
 
 #################################################################################################
 
@@ -15,6 +16,24 @@ DEFAULT_HTTP_TIMEOUT = 30
 LOG = logging.getLogger('JELLYFIN.' + __name__)
 
 #################################################################################################
+
+
+def authorization_header(data):
+    """Build the MediaBrowser authorization header for HTTP and WebSocket."""
+    params = {}
+    if "app.device_name" in data:
+        params = {
+            "Client": data["app.name"],
+            # Jellyfin URL-decodes header values. Encode the device name so
+            # Unicode and header delimiters survive both transports.
+            "Device": quote(str(data["app.device_name"]), safe=""),
+            "DeviceId": data["app.device_id"],
+            "Version": data["app.version"],
+        }
+    if "auth.token" in data:
+        params["Token"] = data["auth.token"]
+    param_line = ", ".join(f'{key}="{value}"' for key, value in params.items())
+    return f"MediaBrowser {param_line}"
 
 
 def tls_verify(data):
