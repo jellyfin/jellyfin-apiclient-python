@@ -155,6 +155,8 @@ The test suite is run via `tox`, and you can install it from PyPi.
    skipped verification when `auth.ssl` was not set, the websocket unless it
    was `True`, and `auth.tls_server_ca` only took effect together with a client
    certificate
+ - Percent-encode device names in HTTP and WebSocket authorization headers to
+   support Unicode characters and header delimiters
 
 ## Contributing
 
