@@ -10,7 +10,7 @@ import certifi
 
 import websocket
 
-from .configuration import tls_verify
+from .configuration import authorization_header, tls_verify
 from .keepalive import KeepAlive
 
 ##################################################################################################
@@ -65,19 +65,7 @@ class WSClient(threading.Thread):
             if self.client.config.data['auth.tls_server_ca']:
                 ssl_context.load_verify_locations(self.client.config.data['auth.tls_server_ca'])
 
-        # Build authorization header for websocket connection
-        auth_params = {}
-        if "app.device_name" in self.client.config.data:
-            auth_params.update({
-                "Client": self.client.config.data['app.name'],
-                "Device": self.client.config.data['app.device_name'],
-                "DeviceId": self.client.config.data['app.device_id'],
-                "Version": self.client.config.data['app.version']
-            })
-        if "auth.token" in self.client.config.data:
-            auth_params["Token"] = self.client.config.data['auth.token']
-        auth_line = ", ".join(f'{k}="{v}"' for k, v in auth_params.items())
-        ws_headers = {"Authorization": f"MediaBrowser {auth_line}"}
+        ws_headers = {"Authorization": authorization_header(self.client.config.data)}
 
         self.wsc = websocket.WebSocketApp(wsc_url,
                                           header=ws_headers,

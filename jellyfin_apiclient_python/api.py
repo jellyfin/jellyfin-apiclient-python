@@ -10,7 +10,7 @@ import requests
 import json
 import logging
 
-from .configuration import tls_verify
+from .configuration import authorization_header, tls_verify
 
 LOG = logging.getLogger('JELLYFIN.' + __name__)
 
@@ -1813,8 +1813,9 @@ class GranularAPIMixin:
 
     def validate_authentication_token(self, server, session=None):
         headers = self.get_default_headers()
-        comma = "," if "app.device_name" in self.config.data else ""
-        headers["Authorization"] += f"{comma} Token=\"{server['AccessToken']}\""
+        headers["Authorization"] = authorization_header(
+            {**self.config.data, "auth.token": server["AccessToken"]}
+        )
 
         response = self.send_request(server['address'], "system/info", headers=headers, session=session)
         return response.json() if response.status_code == 200 else {}
