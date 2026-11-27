@@ -24,15 +24,16 @@ def authorization_header(data):
     if "app.device_name" in data:
         params = {
             "Client": data["app.name"],
-            # Jellyfin URL-decodes header values. Encode the device name so
-            # Unicode and header delimiters survive both transports.
-            "Device": quote(str(data["app.device_name"]), safe=""),
+            "Device": data["app.device_name"],
             "DeviceId": data["app.device_id"],
             "Version": data["app.version"],
         }
     if "auth.token" in data:
         params["Token"] = data["auth.token"]
-    param_line = ", ".join(f'{key}="{value}"' for key, value in params.items())
+    # Jellyfin URL-decodes the values after splitting the header into fields.
+    param_line = ", ".join(
+        f'{key}="{quote(str(value), safe="")}"' for key, value in params.items()
+    )
     return f"MediaBrowser {param_line}"
 
 
